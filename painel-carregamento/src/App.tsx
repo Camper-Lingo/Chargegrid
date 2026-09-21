@@ -7,6 +7,7 @@ import { SelectChargeScreen } from './components/Screens/SelectChargeScreen';
 import { ConfirmScreen } from './components/Screens/ConfirmScreen';
 import { AdminScreen } from './components/Screens/AdminScreen';
 import { AdminLogin } from './components/Screens/AdminLogin';
+import { ConnectionScreen } from './components/Screens/ConnectionScreen';
 import { ChargingScreen } from './components/Screens/ChargingScreen';
 import { HistoryScreen } from './components/Screens/HistoryScreen';
 import { SplashScreen } from './components/Screens/SplashScreen';
@@ -18,6 +19,7 @@ import {
   createVehicle,
   getStations,
   saveChargeSession,
+  connectByCode,
   type ApiStation,
 } from './services/apiClient';
 import type { Screen, ChargeCalculation, ChargeSession, Tariff, ToastData, Car } from './types';
@@ -93,6 +95,7 @@ useEffect(() => {
   fetchTariff();
 }, []);
 
+
 function generateId() {
   return `session_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -110,7 +113,7 @@ function generateId() {
   } = useStorage();
 
   // 'splash' | 'welcome' são fases de onboarding; depois disso usa `screen`
-  type AppPhase = 'splash' | 'welcome' | 'app';
+  type AppPhase = 'splash' | 'connection' | 'welcome' | 'app';
   const [appPhase, setAppPhase] = useState<AppPhase>('splash');
   const [screen, setScreen] = useState<Screen>('dashboard');
   const [adminAuthenticated, setAdminAuthenticated] = useState(false);
@@ -160,57 +163,81 @@ function generateId() {
 
   // Splash complete → ir para Welcome
   const handleSplashComplete = useCallback(() => {
-    setAppPhase('welcome');
+    setAppPhase('connection');
   }, []);
 
   // Welcome: cria cliente + carro no backend, depois entra no app
-  const handleNameSubmit = useCallback(
-    async (name: string, surname: string) => {
-      try {
-        // 1. Cria o cliente de verdade no banco
-        const { customer_id } = await createCustomer(name, surname);
-        setDbCustomerId(customer_id);
+  const handleGuestContinue = useCallback(
+  async (
+    model: string,
+    batteryCapacity: number,
+    maxPower: number,
+    currentBattery: number
+  ) => {
+    try {
+      // Cria um customer anônimo no Supabase
+      const { customer_id } = await createCustomer(
+        'Visitante',
+        ''
+      );
 
-        // 2. Sorteia as specs do carro (sua lógica original) e grava no banco
-        const specs = pickRandomCarSpecs();
-        const { vehicle_id } = await createVehicle({
-          customer_id,
-          model: specs.model,
-          plate: specs.licensePlate,
-          battery_capacity_kwh: specs.batteryCapacity,
-          max_power_kw: specs.maxPower,
-        });
-        setDbVehicleId(vehicle_id);
+      setDbCustomerId(customer_id);
 
-        // 3. Monta o objeto Car do jeito que o front já espera
-        const newCar: Car = {
-          id: `car_${vehicle_id}`,
-          model: specs.model,
-          licensePlate: specs.licensePlate,
-          batteryCapacity: specs.batteryCapacity,
-          currentCharge: specs.currentCharge,
-          maxPower: specs.maxPower,
-          temperature: specs.temperature,
-        };
-        saveCar(newCar);
+      // Cria o veículo escolhido
+      const { vehicle_id } = await createVehicle({
+        customer_id,
+        model,
+        battery_capacity_kwh: batteryCapacity,
+        current_battery_pct: currentBattery,
+        max_charge_power_kw: maxPower,
+      });
 
-        // 4. Salva o usuário localmente (igual já fazia)
-        saveUser({
-          id: `user_${customer_id}`,
-          name,
-          surname,
-          email: '',
-          createdAt: new Date().toISOString(),
-        });
+      setDbVehicleId(vehicle_id);
 
-        setAppPhase('app');
-      } catch (err) {
-        console.error('Erro ao criar cliente/carro no backend:', err);
-        addToast('Erro ao conectar com o servidor. Tente novamente.', 'error');
-      }
-    },
-    [saveCar, saveUser, addToast]
-  );
+      // Objeto utilizado pelo painel
+      const guestCar: Car = {
+        id: `car_${vehicle_id}`,
+        model,
+        licensePlate: '',
+        batteryCapacity,
+        currentCharge: currentBattery,
+        maxPower,
+        temperature: 25,
+      };
+
+      saveCar(guestCar);
+
+      // Usuário local
+      saveUser({
+        id: `guest_${customer_id}`,
+        name: 'Visitante',
+        surname: '',
+        email: '',
+        createdAt: new Date().toISOString(),
+      });
+
+      setAppPhase('app');
+
+      addToast(
+        'Modo visitante iniciado.',
+        'success'
+      );
+    } catch (err) {
+      console.error(
+        'Erro ao iniciar modo visitante:',
+        err
+      );
+
+      addToast(
+        'Não foi possível iniciar o modo visitante.',
+        'error'
+      );
+
+      throw err;
+    }
+  },
+  [saveCar, saveUser, addToast]
+);
 
   // ── Screen handlers ────────────────────────────────────────────────
 
@@ -221,15 +248,17 @@ function generateId() {
     }
 
     try {
-      const specs = pickRandomCarSpecs();
-      const { vehicle_id } = await createVehicle({
-        customer_id: dbCustomerId,
-        model: specs.model,
-        plate: specs.licensePlate,
-        battery_capacity_kwh: specs.batteryCapacity,
-        max_power_kw: specs.maxPower,
-      });
-      setDbVehicleId(vehicle_id);
+  const specs = pickRandomCarSpecs();
+
+  const { vehicle_id } = await createVehicle({
+    customer_id: dbCustomerId,
+    model: specs.model,
+    battery_capacity_kwh: specs.batteryCapacity,
+    current_battery_pct: specs.currentCharge,
+    max_charge_power_kw: specs.maxPower,
+  });
+
+  setDbVehicleId(vehicle_id);
 
       const newCar: Car = {
         id: `car_${vehicle_id}`,
@@ -348,14 +377,91 @@ function generateId() {
     },
     [screen, activeSession, addToast]
   );
+  const handleConnectByCode = async (code: string) => {
+  try {
+    // Busca a conta e o veículo ativo pelo código
+    const result = await connectByCode(code);
+
+    const connectedVehicle = result.vehicle;
+
+    // Guarda os IDs reais do Supabase
+    setDbCustomerId(result.customer_id);
+    setDbVehicleId(connectedVehicle.id);
+
+    // Converte o veículo do Supabase
+    // para o formato Car que o painel já usa
+    const connectedCar: Car = {
+      id: `car_${connectedVehicle.id}`,
+
+      model: connectedVehicle.model,
+
+      // O banco atual não possui placa nesse retorno
+      licensePlate: '',
+
+      batteryCapacity: Number(
+        connectedVehicle.battery_capacity_kwh
+      ),
+
+      currentCharge: Number(
+        connectedVehicle.current_battery_pct
+      ),
+
+      maxPower: Number(
+        connectedVehicle.max_charge_power_kw ?? 0
+      ),
+
+      // Valor visual padrão do painel
+      temperature: 25,
+    };
+
+    // Salva no mesmo sistema que o painel já usa
+    saveCar(connectedCar);
+
+    // Salva também os dados do usuário conectado
+    saveUser({
+      id: `user_${result.customer_id}`,
+      name: result.first_name,
+      surname: result.last_name,
+      email: '',
+      createdAt: new Date().toISOString(),
+    });
+
+    // Entra no painel
+    setAppPhase('app');
+
+    addToast(
+      `Conectado ao ${connectedVehicle.model}`,
+      'success'
+    );
+  } catch (err) {
+    console.error(
+      'Erro ao conectar pelo código:',
+      err
+    );
+
+    throw err;
+  }
+};
 
   // ── ONBOARDING PHASES ─────────────────────────────────────────────
   if (appPhase === 'splash') {
     return <SplashScreen onLoadingComplete={handleSplashComplete} duration={3500} />;
   }
+  if (appPhase === 'connection') {
+  return (
+    <ConnectionScreen
+      onGuest={() => setAppPhase('welcome')}
+      onConnect={handleConnectByCode}
+    />
+  );
+}
   if (appPhase === 'welcome') {
-    return <WelcomeScreen onNameSubmit={handleNameSubmit} />;
-  }
+  return (
+    <WelcomeScreen
+      onContinue={handleGuestContinue}
+    />
+  );
+}
 
   // ── MAIN APP ──────────────────────────────────────────────────────
   return (

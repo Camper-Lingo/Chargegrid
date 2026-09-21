@@ -109,21 +109,46 @@ def create_vehicle(vehicle: VehicleCreate):
 
     try:
         cursor.execute(
-            "INSERT INTO vehicles (customer_id, model, plate, battery_capacity_kwh, max_power_kw) VALUES (%s,%s,%s,%s,%s) RETURNING id",
-            (vehicle.customer_id, vehicle.model, vehicle.plate, vehicle.battery_capacity_kwh, vehicle.max_power_kw)
-
+            """
+            INSERT INTO vehicles (
+                customer_id,
+                model,
+                battery_capacity_kwh,
+                current_battery_pct,
+                max_charge_power_kw,
+                is_active
+            )
+            VALUES (%s, %s, %s, %s, %s, TRUE)
+            RETURNING id
+            """,
+            (
+                vehicle.customer_id,
+                vehicle.model,
+                vehicle.battery_capacity_kwh,
+                vehicle.current_battery_pct,
+                vehicle.max_charge_power_kw,
+            )
         )
+
         novo_id = cursor.fetchone()["id"]
+
         conn.commit()
-        return {"vehicle_id": novo_id}
+
+        return {
+            "vehicle_id": novo_id
+        }
+
     except Exception as erro:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro ao criar veiculo: {erro}")
-    
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao criar veiculo: {erro}"
+        )
+
     finally:
         cursor.close()
         conn.close()
-
 @app.get("/api/stations")
 def list_stations():
     conn = get_connection()
@@ -148,6 +173,76 @@ def calculate_charging(data: ChargingCalculationRequest):
     )
 
     return resultado
+
+@app.get("/api/connect/{connection_code}")
+def connect_by_code(connection_code: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Procura o cliente pelo código
+        cursor.execute(
+            """
+            SELECT id, first_name, last_name
+            FROM customers
+            WHERE UPPER(connection_code) = UPPER(%s)
+            """,
+            (connection_code,)
+        )
+
+        customer = cursor.fetchone()
+
+        if not customer:
+            raise HTTPException(
+                status_code=404,
+                detail="Código de conexão inválido"
+            )
+
+        # Procura o veículo ATIVO desse cliente
+        cursor.execute(
+            """
+            SELECT
+                id,
+                customer_id,
+                model,
+                battery_capacity_kwh,
+                current_battery_pct,
+                max_charge_power_kw
+            FROM vehicles
+            WHERE customer_id = %s
+              AND is_active = true
+            LIMIT 1
+            """,
+            (customer["id"],)
+        )
+
+        vehicle = cursor.fetchone()
+
+        if not vehicle:
+            raise HTTPException(
+                status_code=404,
+                detail="Nenhum veículo ativo encontrado para esta conta"
+            )
+
+        return {
+            "customer_id": customer["id"],
+            "first_name": customer["first_name"],
+            "last_name": customer["last_name"],
+            "vehicle": vehicle
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as erro:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao conectar conta: {erro}"
+        )
+
+    finally:
+        cursor.close()
+        conn.close()
 
 @app.get("/api/admin/customers")
 def admin_customers():
@@ -177,30 +272,48 @@ def admin_customers():
         conn.close()
 
 
-@app.get("/api/admin/vehicles")
-def admin_vehicles():
+@app.post("/api/vehicles", status_code=201)
+def create_vehicle(vehicle: VehicleCreate):
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
-            SELECT
-                v.id,
-                v.customer_id,
-                v.model,
-                v.plate,
-                v.battery_capacity_kwh,
-                v.max_power_kw
-            FROM vehicles v
-            ORDER BY v.id DESC
-        """)
+        cursor.execute(
+            """
+            INSERT INTO vehicles (
+                customer_id,
+                model,
+                battery_capacity_kwh,
+                current_battery_pct,
+                max_charge_power_kw,
+                is_active
+            )
+            VALUES (%s, %s, %s, %s, %s, TRUE)
+            RETURNING id
+            """,
+            (
+                vehicle.customer_id,
+                vehicle.model,
+                vehicle.battery_capacity_kwh,
+                vehicle.current_battery_pct,
+                vehicle.max_charge_power_kw,
+            )
+        )
 
-        return cursor.fetchall()
+        novo_id = cursor.fetchone()["id"]
+
+        conn.commit()
+
+        return {
+            "vehicle_id": novo_id
+        }
 
     except Exception as erro:
+        conn.rollback()
+
         raise HTTPException(
             status_code=500,
-            detail=f"Erro ao buscar veículos: {erro}"
+            detail=f"Erro ao criar veiculo: {erro}"
         )
 
     finally:

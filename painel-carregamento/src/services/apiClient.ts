@@ -25,16 +25,26 @@ export const createCustomer = async (
 export const createVehicle = async (vehicle: {
   customer_id: number;
   model: string;
-  plate: string;
   battery_capacity_kwh: number;
-  max_power_kw: number;
+  current_battery_pct: number;
+  max_charge_power_kw: number;
 }): Promise<{ vehicle_id: number }> => {
   const response = await fetch(`${API_URL}/api/vehicles`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify(vehicle),
   });
-  if (!response.ok) throw new Error('Falha ao criar veículo');
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail ?? 'Falha ao criar veículo'
+    );
+  }
+
   return response.json();
 };
 
@@ -151,6 +161,41 @@ export const getAdminSessions = async (): Promise<AdminSession[]> => {
 
   if (!response.ok) {
     throw new Error('Falha ao buscar sessões');
+  }
+
+  return response.json();
+};
+export interface ConnectedVehicle {
+  id: number;
+  customer_id: number;
+  model: string;
+  battery_capacity_kwh: number;
+  current_battery_pct: number;
+  max_charge_power_kw: number | null;
+}
+
+export interface ConnectionResult {
+  customer_id: number;
+  first_name: string;
+  last_name: string;
+  vehicle: ConnectedVehicle;
+}
+
+export const connectByCode = async (
+  code: string
+): Promise<ConnectionResult> => {
+  const cleanCode = code.trim().toUpperCase();
+
+  const response = await fetch(
+    `${API_URL}/api/connect/${encodeURIComponent(cleanCode)}`
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail ?? "Não foi possível conectar com o app"
+    );
   }
 
   return response.json();

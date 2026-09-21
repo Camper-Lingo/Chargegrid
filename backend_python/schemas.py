@@ -22,9 +22,9 @@ class CustomerCreate(BaseModel):
 class VehicleCreate(BaseModel):
     customer_id: int
     model: str
-    plate: str
     battery_capacity_kwh: float
-    max_power_kw: float
+    current_battery_pct: float
+    max_charge_power_kw: float
 
 class ChargingCalculationRequest(BaseModel):
     energy_needed_kwh: float

@@ -1,58 +1,132 @@
 // src/components/Screens/WelcomeScreen.tsx
 
-import React, { useState, useRef, useEffect } from 'react';
-import { User, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+import { Car, Battery, Zap } from 'lucide-react';
 import { Button } from '../Common/Button';
 
-interface WelcomeScreenProps {
-  onNameSubmit: (name: string, surname: string) => void;
+interface GuestVehicle {
+  model: string;
+  batteryCapacity: number;
+  maxPower: number;
 }
 
-export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNameSubmit }) => {
-  const [name, setName] = useState('');
-  const [surname, setSurname] = useState('');
+const VEHICLES: GuestVehicle[] = [
+  {
+    model: 'Tesla Model 3',
+    batteryCapacity: 60,
+    maxPower: 100,
+  },
+  {
+    model: 'BYD Dolphin',
+    batteryCapacity: 44.9,
+    maxPower: 60,
+  },
+  {
+    model: 'GWM Ora 03',
+    batteryCapacity: 48,
+    maxPower: 67,
+  },
+  {
+    model: 'Volvo EX30',
+    batteryCapacity: 69,
+    maxPower: 153,
+  },
+  {
+    model: 'Audi e-tron GT',
+    batteryCapacity: 93.4,
+    maxPower: 270,
+  },
+];
+
+interface WelcomeScreenProps {
+  onContinue: (
+    model: string,
+    batteryCapacity: number,
+    maxPower: number,
+    currentBattery: number
+  ) => Promise<void>;
+}
+
+export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
+  onContinue,
+}) => {
+  const [selectedModel, setSelectedModel] = useState('');
+  const [currentBattery, setCurrentBattery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [touched, setTouched] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  const selectedVehicle = VEHICLES.find(
+    (vehicle) => vehicle.model === selectedModel
+  );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setTouched(true);
-    if (!name.trim()) return;
+
+    if (!selectedVehicle) {
+      setError('Selecione seu veículo.');
+      return;
+    }
+
+    if (currentBattery === '') {
+      setError('Informe a bateria atual.');
+      return;
+    }
+
+    const battery = Number(currentBattery);
+
+    if (
+      Number.isNaN(battery) ||
+      battery < 0 ||
+      battery > 100
+    ) {
+      setError('A bateria deve estar entre 0% e 100%.');
+      return;
+    }
 
     setIsLoading(true);
-    setTimeout(() => {
-      onNameSubmit(name.trim(), surname.trim());
-    }, 500);
-  };
+    setError('');
 
-  const showError = touched && !name.trim();
+    try {
+      await onContinue(
+        selectedVehicle.model,
+        selectedVehicle.batteryCapacity,
+        selectedVehicle.maxPower,
+        battery
+      );
+    } catch (err) {
+      console.error(err);
+      setError('Não foi possível continuar.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#1A1A1A] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background blobs */}
+      {/* Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
           className="absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl opacity-10"
-          style={{ background: '#00D084', animation: 'blob 7s infinite' }}
+          style={{
+            background: '#00D084',
+            animation: 'blob 7s infinite',
+          }}
         />
+
         <div
           className="absolute bottom-20 left-20 w-96 h-96 rounded-full blur-3xl opacity-10"
-          style={{ background: '#1E90FF', animation: 'blob 7s infinite', animationDelay: '2s' }}
+          style={{
+            background: '#1E90FF',
+            animation: 'blob 7s infinite',
+            animationDelay: '2s',
+          }}
         />
       </div>
 
-      {/* Content */}
-      <div
-        className="relative z-10 w-full max-w-md"
-        style={{ animation: 'welcomeFadeIn 0.5s ease-out forwards' }}
-      >
+      <div className="relative z-10 w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-10">
+
+        <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-5">
             <div className="w-12 h-12 flex items-center justify-center">
               <img
@@ -61,116 +135,164 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNameSubmit }) =>
                 className="w-full h-full object-contain"
               />
             </div>
-            <h1 className="text-3xl font-bold text-[#F5F5F5]">GoodWe</h1>
+
+            <h1 className="text-3xl font-bold text-[#F5F5F5]">
+              GoodWe
+            </h1>
           </div>
 
           <h2 className="text-2xl font-bold text-[#F5F5F5] mb-2">
-            Bem-vindo! 
+            Configure seu veículo
           </h2>
+
           <p className="text-[#A0A0A0]">
-            Como você gostaria de ser chamado?
+            Precisamos de algumas informações para calcular sua recarga.
           </p>
         </div>
 
         {/* Card */}
+
         <div className="bg-[#2E2E2E] rounded-2xl border border-[#3A3A3A] p-7 shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Input */}
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-5"
+          >
+            {/* Modelo */}
+
             <div>
-              <label htmlFor="user-name" className="block text-sm text-[#A0A0A0] mb-2 font-medium">
-                Seu nome
-              </label>
-              <div className={`flex items-center bg-[#242424] rounded-xl border-2 px-4 py-3 transition-colors duration-200
-                ${showError
-                  ? 'border-[#FF6B35]'
-                  : name
-                  ? 'border-[#00D084]'
-                  : 'border-[#3A3A3A] focus-within:border-[#1E90FF]'
-                }`}
-              >
-                <User size={18} className="text-[#6A6A6A] mr-3 flex-shrink-0" />
-                <input
-                  id="user-name"
-                  ref={inputRef}
-                  type="text"
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); setTouched(false); }}
-                  onBlur={() => setTouched(true)}
-                  placeholder="Digite seu nome..."
-                  disabled={isLoading}
-                  maxLength={40}
-                  className="flex-1 bg-transparent text-[#F5F5F5] text-lg font-medium outline-none placeholder-[#4A4A4A] disabled:opacity-50"
-                />
-                {name && (
-                  <span className="text-[#00D084] text-lg ml-2">✓</span>
-                )}
-              </div>
-              {showError && (
-                <p className="text-[#FF6B35] text-xs mt-1.5">Por favor, digite seu nome para continuar.</p>
-              )}
-              <div className="flex justify-between mt-1.5">
-                <span className="text-xs text-[#6A6A6A]">Digite seu nome para continuar</span>
-                <span className={`text-xs font-semibold ${name.length > 0 ? 'text-[#00D084]' : 'text-[#6A6A6A]'}`}>
-                  {name.length}/40
-                </span>
-              </div>
-            </div>
-            <div>
-              <label
-                htmlFor="user-surname"
-                className="block text-sm text-[#A0A0A0] mb-2 font-medium"
-              >
-                Seu sobrenome
+              <label className="block text-sm text-[#A0A0A0] mb-2 font-medium">
+                Modelo do veículo
               </label>
 
-              <div className="flex items-center bg-[#242424] rounded-xl border-2 border-[#3A3A3A] focus-within:border-[#1E90FF] px-4 py-3 transition-colors duration-200">
-                <User
+              <div className="flex items-center bg-[#242424] rounded-xl border-2 border-[#3A3A3A] focus-within:border-[#00D084] px-4">
+                <Car
                   size={18}
-                  className="text-[#6A6A6A] mr-3 flex-shrink-0"
+                  className="text-[#6A6A6A] mr-3"
+                />
+
+                <select
+                  value={selectedModel}
+                  disabled={isLoading}
+                  onChange={(e) => {
+                    setSelectedModel(e.target.value);
+                    setError('');
+                  }}
+                  className="flex-1 bg-[#242424] py-3 text-[#F5F5F5] outline-none"
+                >
+                  <option value="">
+                    Selecione seu carro
+                  </option>
+
+                  {VEHICLES.map((vehicle) => (
+                    <option
+                      key={vehicle.model}
+                      value={vehicle.model}
+                    >
+                      {vehicle.model}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Informações automáticas */}
+
+            {selectedVehicle && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-[#242424] p-4">
+                  <p className="text-xs text-[#A0A0A0]">
+                    Capacidade
+                  </p>
+
+                  <p className="mt-1 font-bold text-[#F5F5F5]">
+                    {selectedVehicle.batteryCapacity} kWh
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-[#242424] p-4">
+                  <p className="text-xs text-[#A0A0A0]">
+                    Potência máxima
+                  </p>
+
+                  <p className="mt-1 font-bold text-[#F5F5F5]">
+                    {selectedVehicle.maxPower} kW
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Bateria */}
+
+            <div>
+              <label className="block text-sm text-[#A0A0A0] mb-2 font-medium">
+                Bateria atual
+              </label>
+
+              <div className="flex items-center bg-[#242424] rounded-xl border-2 border-[#3A3A3A] focus-within:border-[#00D084] px-4">
+                <Battery
+                  size={18}
+                  className="text-[#6A6A6A] mr-3"
                 />
 
                 <input
-                  id="user-surname"
-                  type="text"
-                  value={surname}
-                  onChange={(e) => setSurname(e.target.value)}
-                  placeholder="Digite seu sobrenome..."
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={currentBattery}
                   disabled={isLoading}
-                  maxLength={40}
-                  className="flex-1 bg-transparent text-[#F5F5F5] text-lg font-medium outline-none placeholder-[#4A4A4A] disabled:opacity-50"
+                  onChange={(e) => {
+                    const value = e.target.value;
+
+                    if (value === '') {
+                      setCurrentBattery('');
+                      return;
+                    }
+
+                    const number = Math.min(
+                      100,
+                      Math.max(0, Number(value))
+                    );
+
+                    setCurrentBattery(String(number));
+                    setError('');
+                  }}
+                  placeholder="Ex.: 35"
+                  className="flex-1 bg-transparent py-3 text-[#F5F5F5] text-lg font-medium outline-none placeholder-[#4A4A4A]"
                 />
 
-                {surname && (
-                  <span className="text-[#00D084] text-lg ml-2">✓</span>
-                )}
-              </div>
-
-              <div className="flex justify-end mt-1.5">
-                <span className="text-xs text-[#6A6A6A]">
-                  {surname.length}/40
+                <span className="text-[#A0A0A0]">
+                  %
                 </span>
               </div>
             </div>
 
-            {/* Submit */}
+            {error && (
+              <p className="text-[#FF6B35] text-sm">
+                {error}
+              </p>
+            )}
+
             <Button
-              id="welcome-submit-btn"
               type="submit"
               variant="primary"
               size="lg"
               fullWidth
               loading={isLoading}
               disabled={isLoading}
-              icon={<Zap size={18} fill="white" />}
+              icon={
+                <Zap
+                  size={18}
+                  fill="white"
+                />
+              }
             >
               Continuar
             </Button>
           </form>
 
-          {/* Info */}
           <div className="mt-6 p-3 bg-[#1E90FF]/10 border border-[#1E90FF]/20 rounded-xl">
             <p className="text-[#1E90FF] text-xs text-center">
-              ℹ️ Seu nome será salvo para uma experiência personalizada
+              Você está utilizando o modo visitante.
             </p>
           </div>
         </div>
@@ -179,18 +301,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNameSubmit }) =>
           Estação de Carregamento GoodWe ⚡
         </p>
       </div>
-
-      <style>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33%       { transform: translate(30px, -50px) scale(1.1); }
-          66%       { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        @keyframes welcomeFadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 };
