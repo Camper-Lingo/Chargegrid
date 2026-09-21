@@ -1,180 +1,404 @@
-# ⚡ GoodWe Charging Panel
+# ⚡ ChargeGrid
 
-> Painel de estação de carregamento de veículos elétricos — do onboarding do cliente até a persistência do histórico de carregamento num banco de dados real.
+Plataforma inteligente para gerenciamento e simulação de recargas de veículos elétricos, desenvolvida para o **GoodWe EV Challenge**.
 
-[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-3ECF8E?logo=postgresql&logoColor=white)](https://supabase.com)
+O ChargeGrid integra uma aplicação para o usuário, um painel de carregamento e uma API conectada ao banco de dados, permitindo gerenciar veículos, realizar simulações de recarga, acompanhar custos e conectar o usuário ao painel por meio de um código de conexão.
 
 ---
 
-## 🎯 O que é esse projeto
+## 🚗 Sobre o projeto
 
-Um painel interativo, no estilo de uma estação real de carregamento de carros elétricos, onde o cliente:
+O ChargeGrid foi desenvolvido com o objetivo de tornar o processo de carregamento de veículos elétricos mais simples e integrado.
 
-1. Digita o nome ao chegar
-2. É "reconhecido" junto com um veículo simulado (bateria, capacidade, potência)
-3. Escolhe até quanto quer carregar (ex: +30%)
-4. Vê o cálculo automático de energia, tempo e custo
-5. Acompanha o carregamento em tempo real, com gráfico de potência ao vivo
-6. Ao final, a sessão é **salva num banco de dados PostgreSQL real**, com todos os dados: cliente, veículo, estação, energia gasta, custo e tempo
+A solução é dividida em três principais módulos:
 
-Esse projeto nasceu como um exercício de aprendizado full stack — a ideia foi construir cada camada entendendo o porquê de cada decisão, não só copiando código pronto.
+### 📱 ChargeGrid App
+
+Aplicação utilizada pelo proprietário do veículo.
+
+Permite:
+
+- Criar conta e realizar autenticação
+- Cadastrar múltiplos veículos elétricos
+- Definir qual veículo está ativo
+- Visualizar capacidade da bateria
+- Visualizar potência máxima de carregamento
+- Informar o nível atual da bateria
+- Calcular energia necessária para uma recarga
+- Estimar o custo da recarga
+- Estimar o tempo de carregamento
+- Consultar histórico de recargas
+- Localizar eletropostos
+- Gerar e visualizar um código de conexão com o painel
 
 ---
 
-## 🖼️ Prévia
+### ⚡ Painel de Carregamento
 
-![Print](painel-carregamento/public/Print1.png)
-![Print](painel-carregamento/public/Print2.png)
-![Print](painel-carregamento/public/Print3.png)
-![Print](painel-carregamento/public/Print4.png)
+Interface utilizada na estação de carregamento.
 
+O usuário pode utilizar o painel de duas formas:
 
+**Conectar com o App**
 
+O usuário informa o código de conexão disponibilizado no ChargeGrid App.
+
+O sistema identifica automaticamente:
+
+- Cliente
+- Veículo ativo
+- Capacidade da bateria
+- Nível atual da bateria
+- Potência máxima suportada pelo veículo
+
+Isso permite iniciar o carregamento utilizando os dados previamente cadastrados no aplicativo.
+
+**Modo visitante**
+
+Também é possível utilizar o carregador sem possuir uma conta no ChargeGrid.
+
+O painel permite iniciar uma sessão independente para utilização da estação.
 
 ---
 
-## 🏗️ Como o sistema é organizado
+### 🔌 API
 
-Pensa nisso como 3 peças que conversam entre si:
+O backend foi desenvolvido utilizando **FastAPI** e funciona como camada de comunicação entre o painel e o banco de dados.
 
+Entre suas responsabilidades estão:
+
+- Gerenciamento de clientes
+- Gerenciamento de veículos
+- Consulta de estações
+- Registro de sessões de carregamento
+- Consulta da tarifa atual
+- Cálculos relacionados ao carregamento
+- Conexão do painel através do código do aplicativo
+- Disponibilização de informações administrativas
+
+---
+
+## 🔗 Conexão App ↔ Painel
+
+Uma das principais funcionalidades do ChargeGrid é a integração entre o aplicativo e o painel de carregamento.
+
+O fluxo funciona da seguinte forma:
+
+```text
+Usuário
+   │
+   ▼
+ChargeGrid App
+   │
+   │ Código de conexão
+   ▼
+Painel de Carregamento
+   │
+   ▼
+FastAPI
+   │
+   ▼
+Supabase
+   │
+   ▼
+Cliente + Veículo Ativo
 ```
-┌─────────────────┐       ┌──────────────────┐       ┌─────────────────┐
-│                 │       │                  │       │                 │
-│    FRONTEND     │──────▶│     BACKEND      │──────▶│  BANCO DE DADOS │
-│  (React + TS)   │◀──────│  (Python/FastAPI)│◀──────│  (PostgreSQL)   │
-│                 │       │                  │       │                 │
-└─────────────────┘       └──────────────────┘       └─────────────────┘
-   A telinha que o           O "garçom" que leva         A "estante de
-   cliente usa                pedidos pra lá e            fichários" onde
-                               pra cá                       tudo é guardado
-```
 
-- **Frontend** — a interface visual: telas, animações, cálculo em tempo real
-- **Backend** — API REST que recebe pedidos do frontend e conversa com o banco
-- **Banco de dados** — guarda clientes, veículos, estações e todo o histórico de carregamentos, de forma relacional (nada de dado duplicado)
+O usuário acessa seu código pelo aplicativo e informa esse código no painel.
+
+A API consulta o banco de dados e retorna as informações relacionadas à conta e ao veículo ativo.
 
 ---
 
-## 🧰 Stack Tecnológico
+## 🏗️ Arquitetura
 
-**Frontend:** React 18 · TypeScript · Tailwind CSS · Recharts (gráficos) · Lucide (ícones)
+```text
+ChargeGrid
+│
+├── app_chargergrid/
+│   └── Aplicação do usuário
+│
+├── painel-carregamento/
+│   └── Interface da estação de carregamento
+│
+├── backend_python/
+│   └── API FastAPI
+│
+└── README.md
+```
 
-**Backend:** Python · FastAPI · Pydantic (validação de dados) · psycopg2
+Arquitetura simplificada:
 
-**Banco de dados:** PostgreSQL, hospedado no Supabase
-
-**Ferramentas:** Vite (build do front) · Uvicorn (servidor do back) · Claude(AI) · ChatGPT(AI)
+```text
+┌─────────────────────┐
+│   ChargeGrid App    │
+│ React + TypeScript  │
+└──────────┬──────────┘
+           │
+           │
+           ▼
+┌─────────────────────┐
+│      Supabase       │
+│ Auth + PostgreSQL   │
+└──────────▲──────────┘
+           │
+           │
+┌──────────┴──────────┐
+│    FastAPI API      │
+│       Python        │
+└──────────▲──────────┘
+           │
+           │
+┌──────────┴──────────┐
+│ Painel Carregamento │
+│ React + TypeScript  │
+└─────────────────────┘
+```
 
 ---
 
-## 🗄️ Modelo do Banco de Dados
+## 🛠️ Tecnologias utilizadas
 
-O banco tem 4 tabelas relacionadas. A ideia central: o cliente existe **uma vez só** no banco, mesmo que ele carregue o carro várias vezes — as outras tabelas só *referenciam* ele pelo `id`.
+### Front-end
 
-```
-customers ──< vehicles
-    │
-    └──< charge_sessions >── vehicles
-                  │
-                  └────────── stations
-```
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- TanStack Router
+- TanStack Query
+- Lucide React
 
-- **`customers`** — nome e sobrenome de quem usou o painel
-- **`vehicles`** — veículo simulado, vinculado a um cliente: modelo, placa, capacidade da bateria, potência máxima
-- **`stations`** — as 4 estações de carregamento disponíveis (código, potência máxima, status)
-- **`charge_sessions`** ⭐ — cada carregamento: qual cliente, qual carro, qual estação, quanta energia foi gasta, quanto custou, quanto tempo levou
+### Back-end
+
+- Python
+- FastAPI
+- Pydantic
+- CORS Middleware
+
+### Banco de dados e autenticação
+
+- Supabase
+- PostgreSQL
+- Supabase Auth
+
+### Desenvolvimento
+
+- Git
+- GitHub
+- VS Code
+- npm
+- Python Virtual Environment
 
 ---
 
-## 🚀 Rodando o projeto localmente
+## 🗄️ Banco de dados
 
-### Pré-requisitos
-- Node.js 18+
-- Python 3.9+
-- Uma conta no [Supabase](https://supabase.com) (ou PostgreSQL local)
+O sistema utiliza um banco PostgreSQL integrado ao Supabase.
 
-### 1. Clonar o repositório
+Entre as principais entidades utilizadas estão:
+
+```text
+customers
+vehicles
+charge_sessions
+stations
+tariff_periods
+```
+
+### Vehicles
+
+Os veículos armazenam informações como:
+
+```text
+id
+customer_id
+model
+battery_capacity_kwh
+current_battery_pct
+max_charge_power_kw
+is_active
+```
+
+O campo `is_active` permite que um usuário possua vários veículos cadastrados, mas escolha qual deles será utilizado pelo sistema e enviado ao painel através da conexão.
+
+---
+
+## 🔋 Cálculo de carregamento
+
+O sistema utiliza informações como:
+
+- Capacidade da bateria
+- Bateria atual
+- Bateria desejada
+- Potência máxima do veículo
+- Tarifa por kWh
+
+A energia necessária pode ser estimada por:
+
+```text
+Energia necessária =
+Capacidade da bateria × (Bateria desejada - Bateria atual) / 100
+```
+
+O custo estimado é calculado por:
+
+```text
+Custo = Energia necessária × Tarifa por kWh
+```
+
+E o tempo teórico de carregamento:
+
+```text
+Tempo = Energia necessária / Potência de carregamento
+```
+
+---
+
+## 💰 Tarifas
+
+O ChargeGrid possui suporte a tarifas de energia por período.
+
+O sistema consulta a tarifa vigente e utiliza o valor por kWh para calcular o custo estimado da recarga.
+
+Dessa forma, o usuário consegue visualizar previamente quanto poderá gastar para carregar o veículo.
+
+---
+
+## 📊 Histórico de carregamento
+
+As sessões concluídas podem ser armazenadas no banco de dados contendo informações como:
+
+- Cliente
+- Veículo
+- Estação
+- Bateria inicial
+- Bateria final
+- Energia utilizada
+- Preço por kWh
+- Custo total
+- Horário de início
+- Horário de término
+- Duração
+- Status
+
+Esses dados permitem acompanhar o consumo e os gastos relacionados às recargas.
+
+---
+
+## 🛡️ Painel administrativo
+
+O projeto também possui recursos administrativos para consulta dos dados registrados pelo sistema.
+
+A API disponibiliza informações relacionadas a:
+
+- Clientes
+- Veículos
+- Sessões de carregamento
+
+Isso permite acompanhar as operações realizadas através da plataforma.
+
+---
+
+## ▶️ Executando o projeto
+
+Clone o repositório:
 
 ```bash
-git clone https://github.com/Camper-Lingo/challenge_goodwe1.git
-cd challenge_goodwe1
+git clone https://github.com/Camper-Lingo/ChargeGrid.git
+cd ChargeGrid
 ```
 
-### 2. Configurar o banco de dados
+### ChargeGrid App
 
-Rode o script `schema.sql` (na pasta `database/`) no SQL Editor do seu projeto Supabase — ele cria as 4 tabelas.
+```bash
+cd app_chargergrid
+npm install
+npm run dev
+```
 
-### 3. Configurar o backend
+### Painel
+
+Em outro terminal:
+
+```bash
+cd painel-carregamento
+npm install
+npm run dev
+```
+
+### API
+
+Em outro terminal:
 
 ```bash
 cd backend_python
+```
+
+Crie o ambiente virtual:
+
+```bash
 python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # Mac/Linux
-
-pip install -r requirements.txt
 ```
 
-Copie o arquivo `.env.example` para `.env` e preencha com sua própria connection string do Supabase:
+No Windows:
 
-```
-DATABASE_URL=postgresql://usuario:senha@host:5432/postgres
+```bash
+venv\Scripts\activate
 ```
 
-Rode o servidor:
+Instale as dependências do backend conforme a configuração do projeto e execute a API, por exemplo:
 
 ```bash
 uvicorn main:app --reload
 ```
 
-A API vai rodar em `http://localhost:8000`. A documentação interativa fica em `http://localhost:8000/docs`.
+A API ficará disponível localmente, por padrão, em:
 
-### 4. Configurar o frontend
-
-```bash
-cd ../frontend        # ajuste pro nome real da sua pasta
-npm install
-npm run dev
+```text
+http://localhost:8000
 ```
 
-O app vai rodar em `http://localhost:5173`.
+---
+
+## 🔐 Variáveis de ambiente
+
+Dados sensíveis e configurações locais devem ser armazenados em arquivos `.env`.
+
+O `.env` não deve ser enviado para o GitHub.
+
+Exemplo:
+
+```env
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+DATABASE_URL=...
+```
+
+Cada desenvolvedor deve configurar suas próprias variáveis de ambiente antes de executar o projeto.
 
 ---
 
-## 📡 Principais Endpoints da API
+## 👥 Integrantes
 
-- `POST /api/customers` — cria um cliente novo
-- `POST /api/vehicles` — cria um veículo vinculado a um cliente
-- `GET /api/stations` — lista as estações disponíveis
-- `POST /api/sessions` — grava uma sessão de carregamento completa
-
-
----
-
-## 🧠 O que aprendi construindo isso
-
-- Modelagem relacional de banco de dados (normalização, chaves estrangeiras, por que separar tabelas em vez de repetir dados)
-- Criar uma API REST do zero com FastAPI, incluindo validação automática de dados
-- Conectar frontend e backend, lidando com CORS, variáveis de ambiente e segurança de credenciais
-- Debugar problemas reais de conexão (senha, formatação de URL, ambiente virtual corrompido)
-- Fluxo de trabalho com Git (commit local vs. push remoto, tags de versão)
+| Nome | RM |
+|---|---|
+| João Pedro Camperlingo | RM 568957 |
+| Lucas Silva | RM 572321 |
+| Nicolas Nishi | RM 572242 |
+| Enzo Guislandi | RM 569885 |
+| Guilherme Reiche | RM 569918 |
 
 ---
 
-## 🗺️ Próximos passos
+## 🎓 Projeto acadêmico
 
-- [ ] Autenticação de verdade (login/senha ou token)
-- [ ] Dashboard administrativo para visualizar todas as estações em tempo real
-- [ ] Tarifas dinâmicas por horário de pico
-- [ ] Deploy em produção (Vercel para o front, Railway/Render para o back)
-- [ ] Testes automatizados
+**FIAP — Ciência da Computação**
+
+Projeto desenvolvido no contexto do **GoodWe EV Challenge**, aplicando conceitos de desenvolvimento web, APIs, banco de dados, integração de sistemas e experiência do usuário.
 
 ---
 
-## 👤 Autor
+## ⚡ ChargeGrid
 
-Feito por João Pedro Camperlingo como projeto de aprendizado full stack, em parceria conceitual com a GoodWe.
-
+**Recarga inteligente, conectada e simplificada.**
