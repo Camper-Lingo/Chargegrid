@@ -21,3 +21,9 @@ audit-*.json
 
 # Lovable
 /app_chargergrid/.lovable/
+
+# Arquivos internos do app
+/app_chargergrid/drizzle/
+/app_chargergrid/public/
+/app_chargergrid/supabase/
+/app_chargergrid/README.md
