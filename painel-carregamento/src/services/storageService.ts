@@ -7,42 +7,60 @@ class StorageService {
   };
 
   // ── History ───────────────────────────────────────────────────────
+  // ── History ───────────────────────────────────────────────────────
 
-  addChargeToHistory(session: ChargeSession): void {
-    const history = this.getHistory();
+private getHistoryKey(customerId: number): string {
+  return `${this.KEYS.HISTORY}_${customerId}`;
+}
 
-    history.unshift(session);
+addChargeToHistory(
+  session: ChargeSession,
+  customerId: number
+): void {
+  const history = this.getHistory(customerId);
 
-    localStorage.setItem(
-      this.KEYS.HISTORY,
-      JSON.stringify(history)
+  history.unshift(session);
+
+  localStorage.setItem(
+    this.getHistoryKey(customerId),
+    JSON.stringify(history)
+  );
+}
+
+getHistory(
+  customerId: number,
+  filterDays?: number
+): ChargeSession[] {
+  const data = localStorage.getItem(
+    this.getHistoryKey(customerId)
+  );
+
+  let history: ChargeSession[] = data
+    ? JSON.parse(data)
+    : [];
+
+  if (filterDays) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - filterDays);
+
+    history = history.filter(
+      (s) => new Date(s.timestamp) >= cutoff
     );
   }
 
-  getHistory(filterDays?: number): ChargeSession[] {
-    const data = localStorage.getItem(this.KEYS.HISTORY);
+  return history.sort(
+    (a, b) =>
+      new Date(b.timestamp).getTime() -
+      new Date(a.timestamp).getTime()
+  );
+}
 
-    let history: ChargeSession[] = data ? JSON.parse(data) : [];
+clearHistory(customerId: number): void {
+  localStorage.removeItem(
+    this.getHistoryKey(customerId)
+  );
+}
 
-    if (filterDays) {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - filterDays);
-
-      history = history.filter(
-        (s) => new Date(s.timestamp) >= cutoff
-      );
-    }
-
-    return history.sort(
-      (a, b) =>
-        new Date(b.timestamp).getTime() -
-        new Date(a.timestamp).getTime()
-    );
-  }
-
-  clearHistory(): void {
-    localStorage.removeItem(this.KEYS.HISTORY);
-  }
 
   // ── Tariffs ───────────────────────────────────────────────────────
 

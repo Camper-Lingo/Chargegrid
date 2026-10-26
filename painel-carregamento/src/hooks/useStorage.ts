@@ -1,20 +1,26 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 import type { Car, ChargeSession, User } from '../types';
 
 import { storageService } from '../services/storageService';
 
-export const useStorage = () => {
+export const useStorage = (customerId: number | null) => {
   const [car, setCarState] = useState<Car | null>(null);
 
   const [user, setUserState] = useState<User | null>(null);
 
-  const [history, setHistory] = useState<ChargeSession[]>(
-    () => storageService.getHistory()
-  );
+  const [history, setHistory] = useState<ChargeSession[]>([]);
 
   const [currentSession, setCurrentSessionState] =
     useState<ChargeSession | null>(null);
+
+  useEffect(() => {
+  if (customerId) {
+    setHistory(storageService.getHistory(customerId));
+  } else {
+    setHistory([]);
+  }
+}, [customerId]);
 
   const saveCar = useCallback((newCar: Car) => {
     setCarState(newCar);
@@ -39,10 +45,21 @@ export const useStorage = () => {
     });
   }, []);
 
-  const saveCharge = useCallback((session: ChargeSession) => {
-    storageService.addChargeToHistory(session);
-    setHistory(storageService.getHistory());
-  }, []);
+  const saveCharge = useCallback(
+  (session: ChargeSession) => {
+    if (!customerId) return;
+
+    storageService.addChargeToHistory(
+      session,
+      customerId
+    );
+
+    setHistory(
+      storageService.getHistory(customerId)
+    );
+  },
+  [customerId]
+);
 
   const startSession = useCallback((session: ChargeSession) => {
     setCurrentSessionState(session);
@@ -56,24 +73,41 @@ export const useStorage = () => {
   );
 
   const endSession = useCallback(
-    (finalSession: ChargeSession) => {
-      storageService.addChargeToHistory(finalSession);
+  (finalSession: ChargeSession) => {
+    if (customerId) {
+      storageService.addChargeToHistory(
+        finalSession,
+        customerId
+      );
 
-      setCurrentSessionState(null);
+      setHistory(
+        storageService.getHistory(customerId)
+      );
+    }
 
-      setHistory(storageService.getHistory());
-    },
-    []
-  );
+    setCurrentSessionState(null);
+  },
+  [customerId]
+);
 
-  const getHistoryFiltered = useCallback((days: number) => {
-    return storageService.getHistory(days);
-  }, []);
+  const getHistoryFiltered = useCallback(
+  (days: number) => {
+    if (!customerId) return [];
+
+    return storageService.getHistory(
+      customerId,
+      days
+    );
+  },
+  [customerId]
+);
 
   const clearAllHistory = useCallback(() => {
-    storageService.clearHistory();
-    setHistory([]);
-  }, []);
+  if (!customerId) return;
+
+  storageService.clearHistory(customerId);
+  setHistory([]);
+}, [customerId]);
 
   return {
     car,

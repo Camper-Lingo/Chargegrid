@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Battery, Car, Wallet, ChevronRight, Clock, MapPin, CircleDollarSign, KeyRound } from "lucide-react";
+import { Battery,CreditCard, Car, Wallet, ChevronRight, Clock, MapPin, CircleDollarSign, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -98,10 +98,36 @@ function Dashboard() {
 
   const { data: sessions } = useQuery({
   queryKey: ["sessions"],
+
   queryFn: async () => {
+    // 1. Descobre o usuário logado
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      console.error("Erro ao buscar usuário:", userError);
+      return [];
+    }
+
+    // 2. Descobre o customer_id desse usuário
+    const { data: customer, error: customerError } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .single();
+
+    if (customerError || !customer) {
+      console.error("Erro ao buscar cliente:", customerError);
+      return [];
+    }
+
+    // 3. Busca somente as sessões desse cliente
     const { data, error } = await supabase
       .from("charge_sessions")
       .select("*")
+      .eq("customer_id", customer.id)
       .eq("status", "completed")
       .order("started_at", { ascending: false });
 
@@ -113,7 +139,6 @@ function Dashboard() {
     return data ?? [];
   },
 });
-
   const now = new Date();
   const tariff = tariffs ? activeTariff(tariffs, now) : null;
   const batteryCapacity = vehicle
@@ -152,12 +177,14 @@ const estimatedMinutes =
   const monthKwh = monthSessions.reduce((sum, s) => sum + Number(s.energy_used_kwh), 0);
   const monthCost = monthSessions.reduce((sum, s) => sum + Number(s.total_cost), 0);
 
+
   return (
     <AppShell>
       <h1 className="text-2xl font-bold tracking-tight">Olá! Este é o resumo do seu carro</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Aqui você entende quanto custa carregar e acompanha seus gastos sem complicação.
       </p>
+
 
       {!vehicle ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
@@ -333,9 +360,10 @@ const estimatedMinutes =
         </p>
       </div>
     </div>
-
     <ChevronRight className="h-5 w-5" />
   </Link>
+
+  <RfidCardSection />
 
   <button
     type="button"
@@ -380,5 +408,234 @@ const estimatedMinutes =
         </>
       )}
     </AppShell>
+  );
+}
+
+type RfidStatus =
+  | "checking"
+  | "unlinked"
+  | "waiting"
+  | "linked"
+  | "expired"
+  | "error";
+
+interface RfidResponse {
+  status: RfidStatus;
+  message?: string;
+}
+
+async function rfidRequest(
+  path: string,
+  method: "GET" | "POST" | "DELETE" = "GET"
+): Promise<RfidResponse> {
+  const { data: { session } } =
+    await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error("Faça login novamente no aplicativo.");
+  }
+
+  const response = await fetch(
+    `http://localhost:8000${path}`,
+    {
+      method,
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      cache: "no-store",
+    }
+  );
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      result.detail || "Erro ao comunicar com o Cartão Grid"
+    );
+  }
+
+  return result as RfidResponse;
+}
+
+function RfidCardSection() {
+  const [status, setStatus] = useState<RfidStatus>("checking");
+  const [message, setMessage] = useState("");
+  const [working, setWorking] = useState(false);
+
+  // Consulta o cartão já cadastrado ao abrir o dashboard.
+  useEffect(() => {
+    let active = true;
+
+    rfidRequest("/api/rfid/card")
+      .then((result) => {
+        if (!active) return;
+
+        setStatus(result.status);
+        setMessage(result.message || "");
+      })
+      .catch((error) => {
+        if (!active) return;
+
+        setStatus("error");
+        setMessage(error.message);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Enquanto espera, consulta o servidor a cada 1,5 segundo.
+  useEffect(() => {
+    if (status !== "waiting") return;
+
+    let active = true;
+
+    const interval = window.setInterval(async () => {
+      try {
+        const result = await rfidRequest("/api/rfid/card");
+
+        if (!active) return;
+
+        if (result.status !== "waiting") {
+          setStatus(result.status);
+          setMessage(
+            result.message ||
+            (result.status === "linked"
+              ? "Cartão vinculado com sucesso!"
+              : "")
+          );
+        }
+      } catch (error) {
+        if (!active) return;
+
+        setStatus("error");
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Erro ao verificar o cartão"
+        );
+      }
+    }, 1500);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [status]);
+
+  async function startEnrollment() {
+    setWorking(true);
+    setMessage("");
+
+    try {
+      const result = await rfidRequest(
+        "/api/rfid/enroll/start",
+        "POST"
+      );
+
+      setStatus(result.status);
+      setMessage(result.message || "");
+    } catch (error) {
+      setStatus("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Erro ao iniciar cadastro"
+      );
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function unlinkCard() {
+    if (!window.confirm("Deseja desvincular seu Cartão Grid?")) {
+      return;
+    }
+
+    setWorking(true);
+
+    try {
+      const result = await rfidRequest(
+        "/api/rfid/card",
+        "DELETE"
+      );
+
+      setStatus(result.status);
+      setMessage("Cartão desvinculado.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Erro ao desvincular cartão"
+      );
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-center gap-3">
+        <CreditCard className="h-7 w-7 text-primary" />
+
+        <div>
+          <h2 className="text-lg font-bold">
+            Meu Cartão Grid RFID
+          </h2>
+
+          <p className="text-sm text-muted-foreground">
+            Identifique-se no eletroposto por aproximação.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl bg-muted/40 p-4">
+        <p className="text-sm font-semibold">
+          {status === "checking"
+            ? "Consultando cartão..."
+            : status === "linked"
+              ? "Cartão vinculado"
+              : status === "waiting"
+                ? "Aguardando aproximação..."
+                : "Nenhum cartão ativo"}
+        </p>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          {message ||
+            (status === "linked"
+              ? "Seu cartão está associado à sua conta."
+              : "Vincule um cartão para facilitar sua identificação.")}
+        </p>
+      </div>
+
+      {status === "linked" ? (
+        <button
+          type="button"
+          onClick={unlinkCard}
+          disabled={working}
+          className="mt-4 rounded-lg border border-border px-5 py-3 text-sm font-bold hover:bg-muted disabled:opacity-50"
+        >
+          {working ? "Aguarde..." : "Desvincular cartão"}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={startEnrollment}
+          disabled={
+            working ||
+            status === "waiting" ||
+            status === "checking"
+          }
+          className="mt-4 w-full rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          {status === "waiting"
+            ? "Aproxime o cartão no Wokwi"
+            : working
+              ? "Aguarde..."
+              : "Vincular meu Cartão Grid"}
+        </button>
+      )}
+    </section>
   );
 }

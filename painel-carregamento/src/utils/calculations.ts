@@ -11,6 +11,12 @@ export const calculateCharge = (
   systemLoss: number = 5
 ): ChargeCalculation => {
   const delta = targetBattery - currentBattery;
+  console.log("===== DADOS DO CARREGAMENTO =====");
+console.log("Bateria atual:", currentBattery);
+console.log("Bateria alvo:", targetBattery);
+console.log("Delta:", delta);
+console.log("Capacidade bateria:", batteryCapacity);
+console.log("Potência máxima:", maxPower);
   if (delta <= 0) {
     return {
       energyNeeded: 0,
@@ -25,6 +31,10 @@ export const calculateCharge = (
   const energyNeeded = (batteryCapacity * delta) / 100;
   const losses = energyNeeded * (systemLoss / 100);
   const totalEnergy = energyNeeded + losses;
+  console.log("Energia sem perdas:", energyNeeded);
+console.log("Perdas:", losses);
+console.log("Energia enviada API:", totalEnergy);
+console.log("=================================");
   const totalCost = totalEnergy * costPerKwh;
   const estimatedTime = (totalEnergy / maxPower) * 60; // minutes
 
@@ -45,6 +55,12 @@ export const calculateChargeReal = async (
   systemLoss: number = 5
 ): Promise<ChargeCalculation> => {
   const delta = targetBattery - currentBattery;
+  console.log("===== DADOS DO CARREGAMENTO =====");
+console.log("Bateria atual:", currentBattery);
+console.log("Bateria alvo:", targetBattery);
+console.log("Delta:", delta);
+console.log("Capacidade bateria:", batteryCapacity);
+console.log("Potência máxima:", maxPower);
 
   if (delta <= 0) {
     return {

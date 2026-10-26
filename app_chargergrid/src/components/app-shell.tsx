@@ -1,15 +1,18 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Zap, LayoutDashboard, Car, History, LogOut, MapPin } from "lucide-react";
+import { Route as RouteIcon, Zap, LayoutDashboard, Car, Wallet, History, LogOut, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { AssistantChat } from "@/components/assistant-chat";
 
 const navItems = [
   { to: "/dashboard", label: "Painel", icon: LayoutDashboard },
   { to: "/eletropostos", label: "Eletropostos", icon: MapPin },
   { to: "/veiculo", label: "Veículo", icon: Car },
   { to: "/historico", label: "Histórico", icon: History },
+  { to: "/carteira", label: "Carteira", icon: Wallet },
+  { to: "/viagem", label: "Viagem", icon: RouteIcon},
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -63,7 +66,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-border bg-background px-1 py-1.5 sm:hidden">
+      <AssistantChat />
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 border-t border-border bg-background px-1 py-1.5 sm:hidden">
         {navItems.map((item) => (
           <Link
             key={item.to}

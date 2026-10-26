@@ -741,45 +741,7 @@ function VehiclePage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="current-battery">
-                Bateria atual (%)
-              </Label>
 
-              <Input
-                id="current-battery"
-                required
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value={currentBattery}
-                onChange={(e) => {
-                  const value =
-                    Number(
-                      e.target.value,
-                    );
-
-                  if (
-                    value > 100
-                  ) {
-                    setCurrentBattery(
-                      "100",
-                    );
-                  } else if (
-                    value < 0
-                  ) {
-                    setCurrentBattery(
-                      "0",
-                    );
-                  } else {
-                    setCurrentBattery(
-                      e.target.value,
-                    );
-                  }
-                }}
-              />
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="power">
@@ -907,19 +869,7 @@ function VehiclePage() {
                         </p>
                       </div>
 
-                      <div className="rounded-lg bg-muted p-3">
-                        <p className="text-xs text-muted-foreground">
-                          Atual
-                        </p>
 
-                        <p className="mt-1 font-semibold">
-                          {
-                            Number(
-                              vehicle.current_battery_pct,
-                            )
-                          }%
-                        </p>
-                      </div>
 
                       <div className="rounded-lg bg-muted p-3">
                         <p className="text-xs text-muted-foreground">
