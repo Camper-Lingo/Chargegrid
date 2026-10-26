@@ -1,0 +1,29 @@
+# Credenciais
+.env
+.env.*
+!.env.example
+
+# Dependências e ambientes virtuais
+node_modules/
+.venv/
+venv/
+__pycache__/
+
+# Arquivos de build
+dist/
+build/
+.vite/
+
+# Chaves privadas
+*.pem
+*.key
+audit-*.json
+
+# Lovable
+/app_chargergrid/.lovable/
+
+# Arquivos internos do app
+/app_chargergrid/drizzle/
+/app_chargergrid/public/
+/app_chargergrid/supabase/
+/app_chargergrid/README.md

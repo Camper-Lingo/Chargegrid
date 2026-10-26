@@ -83,6 +83,21 @@ type PublicStation = {
   longitude: number;
   rating?: number | null;
   ratingCount?: number | null;
+
+  code?: string;
+  maxPowerKw?: number;
+  status?: "available" | "occupied" | "offline";
+};
+
+type DatabaseStation = {
+  id: number;
+  code: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  max_power_kw: number;
+  status: "available" | "occupied" | "offline";
 };
 
 type AvailabilityRow = {
@@ -255,6 +270,40 @@ function StationsPage() {
   });
 
   const queryClient = useQueryClient();
+  const databaseStationsQuery = useQuery({
+  queryKey: ["database-stations"],
+
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("stations")
+      .select(`
+        id,
+        code,
+        name,
+        address,
+        latitude,
+        longitude,
+        max_power_kw,
+        status
+      `)
+      .order("id");
+
+    if (error) {
+      console.error(
+        "Erro ao buscar status das estações:",
+        error
+      );
+
+      throw error;
+    }
+
+    console.log("ESTAÇÕES DO BANCO:", data);
+
+    return (data ?? []) as DatabaseStation[];
+  },
+
+  refetchInterval: 3000,
+});
 
   const [center, setCenter] =
     useState(SAO_PAULO);
@@ -282,7 +331,7 @@ function StationsPage() {
   },
 });
 
-  
+
 
 
   /* =======================================================
@@ -292,6 +341,7 @@ function StationsPage() {
   const partnerStations = useMemo(() => {
     const grouped =
       new Map<string, AvailabilityRow[]>();
+
 
     for (const row of
       partnersQuery.data ?? []) {
@@ -315,29 +365,50 @@ function StationsPage() {
      usa o fallback.
   ======================================================= */
 
-  const publicStations =
-    useMemo(() => {
-      const externalStations =
-        searchStations.data ?? [];
+  const publicStations = useMemo(() => {
+  const externalStations =
+    searchStations.data ?? [];
 
-      const source =
-        externalStations.length > 0
-          ? externalStations
-          : FALLBACK_STATIONS;
+  const source =
+    externalStations.length > 0
+      ? externalStations
+      : FALLBACK_STATIONS;
 
-      return source.filter(
-        (station) =>
-          !partnerStations.some(
-            (rows) =>
-              rows[0]?.station_name ===
-              station.name,
-          ),
+  const databaseStations =
+    databaseStationsQuery.data ?? [];
+
+  return source
+    .filter(
+      (station) =>
+        !partnerStations.some(
+          (rows) =>
+            rows[0]?.station_name === station.name
+        )
+    )
+    .map((station) => {
+      const dbStation = databaseStations.find(
+        (db) =>
+          db.name.trim().toLowerCase() ===
+          station.name.trim().toLowerCase()
       );
-    }, [
-      searchStations.data,
-      partnerStations,
-    ]);
 
+      return {
+        ...station,
+
+        code: dbStation?.code,
+
+        maxPowerKw:
+          dbStation?.max_power_kw,
+
+        status:
+          dbStation?.status,
+      };
+    });
+}, [
+  searchStations.data,
+  partnerStations,
+  databaseStationsQuery.data,
+]);
   /* =======================================================
      MARCADORES DO MAPA
   ======================================================= */
@@ -388,12 +459,12 @@ function StationsPage() {
      RESERVAR VAGA
   ======================================================= */
 
-  
+
   /* =======================================================
      CANCELAR RESERVA
   ======================================================= */
 
-  
+
 
   /* =======================================================
      LOCALIZAÇÃO DO USUÁRIO
@@ -471,7 +542,7 @@ function StationsPage() {
       secondsLeft % 60,
     ).padStart(2, "0");
 
-  
+
   /* =======================================================
      RENDER
   ======================================================= */
@@ -482,13 +553,13 @@ function StationsPage() {
           HEADER
       =================================================== */}
 
-      
+
 
       {/* ===================================================
           RESERVA ATIVA
       =================================================== */}
 
-     
+
 
       {/* ===================================================
           MAPA
@@ -598,6 +669,27 @@ function StationsPage() {
                   <Badge variant="outline">
                     Ponto de recarga
                   </Badge>
+                  {station.status && (
+  <div className="mt-2">
+    {station.status === "available" && (
+      <Badge className="bg-green-500/10 text-green-500 border-green-500/30">
+        ● Disponível
+      </Badge>
+    )}
+
+    {station.status === "occupied" && (
+      <Badge className="bg-red-500/10 text-red-500 border-red-500/30">
+        ● Ocupada
+      </Badge>
+    )}
+
+    {station.status === "offline" && (
+      <Badge className="bg-zinc-500/10 text-zinc-400 border-zinc-500/30">
+        ● Offline
+      </Badge>
+    )}
+  </div>
+)}
 
                   <h2 className="mt-3 text-lg font-bold">
                     {station.name}
@@ -634,15 +726,33 @@ function StationsPage() {
                   : ""}
               </p>
 
-              <div className="mt-4 flex items-center gap-2 rounded-md bg-muted p-3 text-sm text-muted-foreground">
-                <PlugZap className="h-4 w-4 shrink-0" />
+              <div
+  className={`mt-4 flex items-center gap-3 rounded-md border p-3 text-sm ${
+    station.status === "occupied"
+      ? "border-red-500/20 bg-red-500/5 text-red-500"
+      : station.status === "offline"
+        ? "border-zinc-500/20 bg-zinc-500/5 text-zinc-400"
+        : "border-green-500/20 bg-green-500/5 text-green-500"
+  }`}
+>
+  <PlugZap className="h-5 w-5 shrink-0" />
 
-                <span>
-                  Ponto de recarga
-                  disponível para
-                  consulta no mapa.
-                </span>
-              </div>
+  <div>
+    <p className="font-semibold">
+      {station.status === "occupied"
+        ? "Estação ocupada"
+        : station.status === "offline"
+          ? "Estação indisponível"
+          : "Estação disponível"}
+    </p>
+
+    {station.maxPowerKw && (
+      <p className="mt-0.5 text-xs opacity-80">
+        Potência máxima: {station.maxPowerKw} kW
+      </p>
+    )}
+  </div>
+</div>
 
               <Button
                 variant="outline"
@@ -696,7 +806,7 @@ function StationsPage() {
           MODAL DE RESERVA
       =================================================== */}
 
-      
+
     </AppShell>
   );
 }

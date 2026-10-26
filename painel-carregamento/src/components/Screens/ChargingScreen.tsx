@@ -1,7 +1,7 @@
 // src/components/Screens/ChargingScreen.tsx
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Zap, Battery, Clock, Thermometer, Pause, Square, TrendingUp, Flag } from 'lucide-react';
+import { Zap, Battery, Clock, Thermometer, Square, TrendingUp, Flag } from 'lucide-react';
 import {
   AreaChart,
   Area,
@@ -15,9 +15,11 @@ import { Card } from '../Common/Card';
 import { Button } from '../Common/Button';
 import { CircularProgress } from '../Common/CircularProgress';
 import { formatCurrency, formatTime, } from '../../utils/formatters';
+import { getDemandStatus } from '../../services/apiClient';
 
 interface ChargingScreenProps {
   car: Car;
+  customerName: string;
   session: ChargeSession;
   calculation: ChargeCalculation;
   onPause: () => void;
@@ -34,16 +36,20 @@ export const ChargingScreen: React.FC<ChargingScreenProps> = ({
   car,
   session,
   calculation,
-  onPause,
   onStop,
   onCarChargeUpdate,
+  customerName
 }) => {
   const [currentBattery, setCurrentBattery] = useState(session.startBattery);
   const [energyDelivered, setEnergyDelivered] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [paused] = useState(false);
   const [temperature, setTemperature] = useState(car.temperature ?? 28);
   const [currentPower, setCurrentPower] = useState(calculation.powerAvailable);
+  const [demandLimited, setDemandLimited] = useState(false);
+  const [allowedPower, setAllowedPower] = useState(
+  calculation.powerAvailable
+);
   const [powerHistory, setPowerHistory] = useState<PowerPoint[]>([
     { time: 0, power: calculation.powerAvailable },
   ]);
@@ -58,8 +64,65 @@ export const ChargingScreen: React.FC<ChargingScreenProps> = ({
   const targetBattery = session.endBattery;
   const totalEnergyNeeded = calculation.energyNeeded;
 
-  const estimatedTotalSeconds = calculation.estimatedTime * 60;
-  const remainingSeconds = Math.max(0, estimatedTotalSeconds - elapsedSeconds);
+  const ultimaSincronizacaoRef = useRef(0);
+
+  // Envia os mesmos valores mostrados na tela ao ESP32
+  useEffect(() => {
+    if (finishedRef.current) return;
+
+    const agora = Date.now();
+
+    // Envia no maximo uma atualizacao a cada 3 segundos
+    if (agora - ultimaSincronizacaoRef.current < 3000) {
+      return;
+    }
+
+    ultimaSincronizacaoRef.current = agora;
+
+    const custoAtual = energyDelivered * session.costPerKwh;
+
+    fetch('http://localhost:8000/api/hardware/1/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status: 'charging',
+        customer_name: customerName,
+        vehicle_model: car.model,
+        station_code: session.stationId,
+        battery_pct: Math.round(currentBattery),
+        power_kw: paused ? 0 : Math.round(currentPower),
+        energy_kwh: Number(energyDelivered.toFixed(2)),
+        cost_brl: Number(custoAtual.toFixed(2)),
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Falha ao atualizar hardware');
+        }
+      })
+      .catch((error) => {
+        console.error('Erro na telemetria ESP32:', error);
+      });
+  }, [
+    currentBattery,
+    currentPower,
+    energyDelivered,
+    paused,
+    customerName,
+    car.model,
+    session.stationId,
+    session.costPerKwh,
+  ]);
+
+
+  const simulationDurationSeconds = 60;
+
+const remainingSeconds = Math.max(
+  0,
+  simulationDurationSeconds - elapsedSeconds
+);
 
   const finishSession = useCallback(
     (finalBattery: number, finalEnergy: number, elapsed: number) => {
@@ -82,96 +145,180 @@ export const ChargingScreen: React.FC<ChargingScreenProps> = ({
   );
 
   useEffect(() => {
+  async function updateDemand() {
+    try {
+      const demand = await getDemandStatus();
+
+      const allowed =
+        demand.ev_requested_kw > 0
+          ? calculation.powerAvailable *
+            (demand.ev_allowed_kw / demand.ev_requested_kw)
+          : calculation.powerAvailable;
+
+      const finalAllowed = Math.min(
+        calculation.powerAvailable,
+        allowed
+      );
+
+      setAllowedPower(finalAllowed);
+      setDemandLimited(demand.limited);
+
+    } catch (error) {
+      console.error(
+        'Erro ao consultar gestão de demanda:',
+        error
+      );
+
+      // Em caso de falha da simulação de demanda,
+      // mantém a potência calculada originalmente.
+      setAllowedPower(calculation.powerAvailable);
+      setDemandLimited(false);
+    }
+  }
+
+  updateDemand();
+
+  const demandInterval = setInterval(
+    updateDemand,
+    5000
+  );
+
+  return () => clearInterval(demandInterval);
+}, [calculation.powerAvailable]);
+
+  useEffect(() => {
     // Bolt pulse toggle
     const boltTimer = setInterval(() => setBoltPulse((p) => !p), 800);
     return () => clearInterval(boltTimer);
   }, []);
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      if (pausedRef.current) return;
+  intervalRef.current = setInterval(() => {
+    if (pausedRef.current || finishedRef.current) return;
 
-      setElapsedSeconds((prev) => prev + 1);
+    setElapsedSeconds((prevSeconds) => {
+      const nextSeconds = prevSeconds + 1;
 
-      // Simulate charging: increase battery by ~0.4-0.7% per second
-      setCurrentBattery((prev) => {
-        if (finishedRef.current) return prev;
-        const increment = 0.4 + Math.random() * 0.3;
-        const next = Math.min(targetBattery, prev + increment);
-        onCarChargeUpdate(next);
-        return next;
-      });
+      // Acelera a simulação visual.
+      // O carregamento inteiro leva aproximadamente 60 segundos na tela.
 
-      // Check completion outside setState to avoid double-firing
-      setCurrentBattery((prev) => {
-        if (!finishedRef.current && prev >= targetBattery) {
-          setEnergyDelivered((e) => {
-            setElapsedSeconds((s) => {
-              finishSession(prev, e, s);
-              return s;
-            });
-            return e;
-          });
-        }
-        return prev;
-      });
 
-      // Simulate energy delivery
-      setEnergyDelivered((prev) => {
-        const rate = calculation.powerAvailable / 3600; // kWh per second
-        return Math.min(totalEnergyNeeded, prev + rate);
-      });
+      const progress = Math.min(
+        1,
+        nextSeconds / simulationDurationSeconds
+      );
 
-      // Simulate power fluctuation
-      setCurrentPower((prev) => {
-        const fluctuation = (Math.random() - 0.5) * 4;
-        const next = Math.max(
-          calculation.powerAvailable * 0.85,
-          Math.min(calculation.powerAvailable, prev + fluctuation)
+      // Bateria, energia e custo passam a usar o MESMO progresso.
+      const batteryRange =
+        targetBattery - sessionRef.current.startBattery;
+
+      const nextBattery =
+        sessionRef.current.startBattery +
+        batteryRange * progress;
+
+      const nextEnergy =
+        totalEnergyNeeded * progress;
+
+      setCurrentBattery(nextBattery);
+      setEnergyDelivered(nextEnergy);
+
+      onCarChargeUpdate(nextBattery);
+
+      // Conclusão
+      if (progress >= 1 && !finishedRef.current) {
+        finishSession(
+          targetBattery,
+          totalEnergyNeeded,
+          nextSeconds
         );
-        setPowerHistory((ph) => {
-          const newPoint = { time: ph.length, power: Math.round(next) };
-          return [...ph.slice(-29), newPoint];
-        });
-        return next;
+      }
+
+      return nextSeconds;
+    });
+
+    // Simulação da potência visual
+    setCurrentPower((prev) => {
+      const fluctuation = (Math.random() - 0.5) * 4;
+
+      const minimumPower = allowedPower * 0.85;
+
+const next = Math.max(
+  minimumPower,
+  Math.min(
+    allowedPower,
+    prev + fluctuation
+  )
+);
+
+      setPowerHistory((ph) => {
+        const newPoint = {
+          time: ph.length,
+          power: Math.round(next),
+        };
+
+        return [...ph.slice(-29), newPoint];
       });
 
-      // Simulate temperature
-      setTemperature((prev) => {
-        const drift = (Math.random() - 0.3) * 0.2;
-        return Math.min(45, Math.max(25, prev + drift));
-      });
-    }, 1000);
+      return next;
+    });
 
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [
-    targetBattery,
-    calculation.powerAvailable,
-    totalEnergyNeeded,
-    finishSession,
-    onCarChargeUpdate,
-  ]);
+    // Simulação da temperatura
+    setTemperature((prev) => {
+      const drift = (Math.random() - 0.3) * 0.2;
 
-  const handlePause = () => {
-    setPaused((p) => !p);
-    onPause();
+      return Math.min(
+        45,
+        Math.max(25, prev + drift)
+      );
+    });
+  }, 1000);
+
+  return () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
   };
+}, [
+  targetBattery,
+  totalEnergyNeeded,
+  calculation.powerAvailable,
+  allowedPower,
+  finishSession,
+  onCarChargeUpdate,
+]);
+
 
   const handleStop = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    const costSoFar = energyDelivered * session.costPerKwh;
-    const finalSession: ChargeSession = {
-      ...session,
-      endBattery: Math.round(currentBattery),
-      energyUsed: Math.round(energyDelivered * 10) / 10,
-      totalCost: Math.round(costSoFar * 100) / 100,
-      duration: Math.round(elapsedSeconds / 60),
-      status: 'cancelled',
-    };
-    onStop(finalSession);
+  if (finishedRef.current) return;
+
+  finishedRef.current = true;
+
+  if (intervalRef.current) {
+    clearInterval(intervalRef.current);
+  }
+
+  const costSoFar =
+    energyDelivered * session.costPerKwh;
+
+  const finalSession: ChargeSession = {
+    ...session,
+    endBattery: Math.round(currentBattery),
+
+    energyUsed:
+      Math.round(energyDelivered * 100) / 100,
+
+    totalCost:
+      Math.round(costSoFar * 100) / 100,
+
+    duration:
+      Math.max(1, Math.round(elapsedSeconds / 60)),
+
+    status: 'cancelled',
   };
+
+  onCarChargeUpdate(Math.round(currentBattery));
+  onStop(finalSession);
+};
 
   const costSoFar = energyDelivered * session.costPerKwh;
 
@@ -195,6 +342,22 @@ export const ChargingScreen: React.FC<ChargingScreenProps> = ({
           </span>
         </div>
         <p className="text-[#A0A0A0] text-sm">{car.model}</p>
+        {demandLimited && (
+  <div className="mt-3 mx-auto max-w-[420px] rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+    <div className="flex items-center justify-center gap-2 text-amber-400">
+      <Zap size={15} />
+
+      <span className="text-xs font-semibold">
+        Gestão de demanda ativa
+      </span>
+    </div>
+
+    <p className="mt-1 text-center text-[11px] text-amber-200/70">
+      Potência limitada temporariamente para evitar
+      sobrecarga da instalação.
+    </p>
+  </div>
+)}
       </div>
 
       {/* ===== FOCAL POINT: bola gigante com stats orbitando ===== */}
@@ -309,27 +472,18 @@ export const ChargingScreen: React.FC<ChargingScreenProps> = ({
         </div>
       </Card>
 
+
       {/* Controls */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="w-full">
         <Button
-          id="pause-btn"
-          variant={paused ? 'success' : 'secondary'}
-          size="lg"
-          fullWidth
-          onClick={handlePause}
-          icon={paused ? <Zap size={18} /> : <Pause size={18} />}
-        >
-          {paused ? 'Retomar' : 'Pausar'}
-        </Button>
-        <Button
-          id="stop-btn"
+          id="end-charge-btn"
           variant="danger"
           size="lg"
           fullWidth
           onClick={handleStop}
           icon={<Square size={18} />}
         >
-          Encerrar
+          Encerrar Carregamento
         </Button>
       </div>
     </div>

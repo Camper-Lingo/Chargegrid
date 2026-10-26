@@ -25,7 +25,6 @@ const QUICK_OPTIONS = [
 
 export const SelectChargeScreen: React.FC<SelectChargeScreenProps> = ({
   car,
-  tariff,
   onBack,
   onContinue,
 }) => {
@@ -43,7 +42,7 @@ const [calculation, setCalculation] = useState<ChargeCalculation>({
   systemLoss: 5,
 });
 
-const [isCalculating, setIsCalculating] = useState(false);
+const [, setIsCalculating] = useState(false);
 
 useEffect(() => {
   const calculate = async () => {

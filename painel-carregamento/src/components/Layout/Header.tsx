@@ -1,7 +1,7 @@
 // src/components/Layout/Header.tsx
 
 import React from 'react';
-import { Settings, History, LayoutDashboard,Shield } from 'lucide-react';
+import { LogOut, History, LayoutDashboard } from 'lucide-react';
 import type { Screen } from '../../types';
 
 
@@ -9,6 +9,7 @@ interface HeaderProps {
   currentScreen: Screen;
   onNavigate: (screen: Screen) => void;
   stationId?: string;
+  onExit: () => void;
   userName?: string;
 }
 
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   stationId,
   userName,
+  onExit,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#1A1A1A]/90 backdrop-blur-md border-b border-[#3A3A3A]">
@@ -71,24 +73,18 @@ export const Header: React.FC<HeaderProps> = ({
             active={currentScreen === 'history'}
             onClick={() => onNavigate('history')}
           />
-          <NavBtn
-            id="nav-admin"
-            icon={<Shield size={16} />}
-            label="Admin"
-            active={currentScreen === 'admin'}
-            onClick={() => onNavigate('admin')}
-          />
 
-          <NavBtn
-            id="nav-settings"
-            icon={<Settings size={16} />}
-            label=""
-            active={false}
-            onClick={() => {}}
-            title="Configurações"
-          />
+
+          <button
+            type="button"
+            onClick={onExit}
+            className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 font-semibold text-red-400 transition hover:bg-red-500/20"
+          >
+            <LogOut size={18} />
+            <span>Sair</span>
+          </button>
+
         </nav>
-
       </div>
     </header>
   );

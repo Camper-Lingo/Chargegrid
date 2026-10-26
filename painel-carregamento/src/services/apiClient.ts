@@ -5,8 +5,14 @@ const API_URL = 'http://localhost:8000';
 export interface ApiStation {
   id: number;
   code: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
   max_power_kw: number;
-  status: string;
+  reservation_token?: string | null;
+  reservation_expires_at?: string | null;
+  status: 'available' | 'occupied' | 'offline';
 }
 
 export const createCustomer = async (
@@ -52,6 +58,43 @@ export const getStations = async (): Promise<ApiStation[]> => {
   const response = await fetch(`${API_URL}/api/stations`);
   if (!response.ok) throw new Error('Falha ao buscar estações');
   return response.json();
+};
+export const occupyRandomStation = async (): Promise<ApiStation> => {
+  const response = await fetch(
+    `${API_URL}/api/stations/occupy-random`,
+    {
+      method: 'POST',
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail ?? 'Nenhuma estação disponível'
+    );
+  }
+
+  return response.json();
+};
+
+export const releaseStation = async (
+  stationId: number
+): Promise<void> => {
+  const response = await fetch(
+    `${API_URL}/api/stations/${stationId}/release`,
+    {
+      method: 'POST',
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail ?? 'Falha ao liberar estação'
+    );
+  }
 };
 
 export const saveChargeSession = async (session: {
@@ -200,3 +243,31 @@ export const connectByCode = async (
 
   return response.json();
 };
+
+export interface DemandStatus {
+  installation_limit_kw: number;
+  building_consumption_kw: number;
+  available_for_evs_kw: number;
+  ev_requested_kw: number;
+  ev_allowed_kw: number;
+  total_requested_kw: number;
+  projected_total_kw: number;
+  utilization_pct: number;
+  limited: boolean;
+  reduction_kw: number;
+  reduction_pct: number;
+}
+
+export async function getDemandStatus(): Promise<DemandStatus> {
+  const response = await fetch(
+    `${API_URL}/api/demand`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Não foi possível consultar a gestão de demanda"
+    );
+  }
+
+  return response.json();
+}

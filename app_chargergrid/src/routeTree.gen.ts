@@ -13,10 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCarregarRouteImport } from './routes/_authenticated/carregar'
+import { Route as AuthenticatedCarteiraRouteImport } from './routes/_authenticated/carteira'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEletropostosRouteImport } from './routes/_authenticated/eletropostos'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
 import { Route as AuthenticatedVeiculoRouteImport } from './routes/_authenticated/veiculo'
+import { Route as AuthenticatedViagemRouteImport } from './routes/_authenticated/viagem'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,6 +37,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedCarregarRoute = AuthenticatedCarregarRouteImport.update({
   id: '/carregar',
   path: '/carregar',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCarteiraRoute = AuthenticatedCarteiraRouteImport.update({
+  id: '/carteira',
+  path: '/carteira',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -58,24 +65,33 @@ const AuthenticatedVeiculoRoute = AuthenticatedVeiculoRouteImport.update({
   path: '/veiculo',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedViagemRoute = AuthenticatedViagemRouteImport.update({
+  id: '/viagem',
+  path: '/viagem',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/carregar': typeof AuthenticatedCarregarRoute
+  '/carteira': typeof AuthenticatedCarteiraRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eletropostos': typeof AuthenticatedEletropostosRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/veiculo': typeof AuthenticatedVeiculoRoute
+  '/viagem': typeof AuthenticatedViagemRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/carregar': typeof AuthenticatedCarregarRoute
+  '/carteira': typeof AuthenticatedCarteiraRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eletropostos': typeof AuthenticatedEletropostosRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/veiculo': typeof AuthenticatedVeiculoRoute
+  '/viagem': typeof AuthenticatedViagemRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -83,10 +99,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/carregar': typeof AuthenticatedCarregarRoute
+  '/_authenticated/carteira': typeof AuthenticatedCarteiraRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/eletropostos': typeof AuthenticatedEletropostosRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/veiculo': typeof AuthenticatedVeiculoRoute
+  '/_authenticated/viagem': typeof AuthenticatedViagemRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -94,29 +112,35 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/carregar'
+    | '/carteira'
     | '/dashboard'
     | '/eletropostos'
     | '/historico'
     | '/veiculo'
+    | '/viagem'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/carregar'
+    | '/carteira'
     | '/dashboard'
     | '/eletropostos'
     | '/historico'
     | '/veiculo'
+    | '/viagem'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/carregar'
+    | '/_authenticated/carteira'
     | '/_authenticated/dashboard'
     | '/_authenticated/eletropostos'
     | '/_authenticated/historico'
     | '/_authenticated/veiculo'
+    | '/_authenticated/viagem'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -155,6 +179,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCarregarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/carteira': {
+      id: '/_authenticated/carteira'
+      path: '/carteira'
+      fullPath: '/carteira'
+      preLoaderRoute: typeof AuthenticatedCarteiraRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -183,23 +214,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVeiculoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/viagem': {
+      id: '/_authenticated/viagem'
+      path: '/viagem'
+      fullPath: '/viagem'
+      preLoaderRoute: typeof AuthenticatedViagemRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCarregarRoute: typeof AuthenticatedCarregarRoute
+  AuthenticatedCarteiraRoute: typeof AuthenticatedCarteiraRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEletropostosRoute: typeof AuthenticatedEletropostosRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedVeiculoRoute: typeof AuthenticatedVeiculoRoute
+  AuthenticatedViagemRoute: typeof AuthenticatedViagemRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCarregarRoute: AuthenticatedCarregarRoute,
+  AuthenticatedCarteiraRoute: AuthenticatedCarteiraRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEletropostosRoute: AuthenticatedEletropostosRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedVeiculoRoute: AuthenticatedVeiculoRoute,
+  AuthenticatedViagemRoute: AuthenticatedViagemRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

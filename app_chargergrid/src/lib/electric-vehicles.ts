@@ -2,6 +2,8 @@ export interface ElectricVehicleModel {
   name: string;
   batteryKwh: number;
   maxChargeKw: number;
+  /** Consumo médio em kWh a cada 100 km (opcional; sem ele usamos uma estimativa) */
+  consumptionKwh100km?: number;
 }
 
 // Catálogo de modelos elétricos para agilizar o cadastro. O campo continua
@@ -91,3 +93,66 @@ export const ELECTRIC_VEHICLES: ElectricVehicleModel[] = [
   { name: "Zeekr 001", batteryKwh: 100, maxChargeKw: 200 },
   { name: "Zeekr X", batteryKwh: 69, maxChargeKw: 150 },
 ].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+
+// ── Consumo (kWh/100 km) ────────────────────────────────────────────
+// Valores APROXIMADOS de uso misto, para o planejador de viagem.
+// Confira/atualize com a tabela PBEV do Inmetro ou a ficha do fabricante.
+const KNOWN_CONSUMPTION: Record<string, number> = {
+  "BYD Dolphin Mini": 13,
+  "BYD Dolphin": 14.5,
+  "BYD Dolphin Plus": 15.5,
+  "BYD Seal": 16,
+  "BYD Tan": 21,
+  "Renault Kwid E-Tech": 12,
+  "Caoa Chery iCar": 12.5,
+  "JAC E-JS1": 12.5,
+  "Citroën ë-C3": 15,
+  "Chevrolet Bolt EV": 16,
+  "Nissan Leaf": 16,
+  "Peugeot e-208": 15.5,
+  "Peugeot e-2008": 16.5,
+  "Volvo EX30": 16.5,
+  "Volvo EX30 Extended Range": 17,
+  "Tesla Model 3": 14,
+  "Tesla Model 3 Long Range": 14.5,
+  "Tesla Model Y": 15.5,
+  "Tesla Model Y Long Range": 16,
+  "Hyundai Ioniq 5": 18,
+  "Hyundai Ioniq 6": 15,
+  "Kia EV6": 17.5,
+  "Ford F-150 Lightning": 28,
+};
+
+/** Consumo padrão quando o modelo não é conhecido, pelo tamanho da bateria. */
+function estimateFromBattery(batteryKwh: number) {
+  if (batteryKwh < 45) return 13.5;
+  if (batteryKwh < 75) return 16;
+  if (batteryKwh < 95) return 18.5;
+  return 21.5;
+}
+
+export const DEFAULT_CONSUMPTION_KWH_100KM = 16;
+
+export function findVehicleModel(name: string | null | undefined) {
+  if (!name) return undefined;
+  const key = name.trim().toLowerCase();
+  return ELECTRIC_VEHICLES.find((v) => v.name.toLowerCase() === key);
+}
+
+/**
+ * Consumo do veículo em kWh/100 km.
+ * `estimated` = true quando é um valor estimado (modelo fora da tabela).
+ */
+export function vehicleConsumption(
+  modelName: string | null | undefined,
+  batteryKwh?: number,
+): { kwhPer100km: number; estimated: boolean } {
+  const model = findVehicleModel(modelName);
+  const known = model?.consumptionKwh100km ?? (model ? KNOWN_CONSUMPTION[model.name] : undefined);
+  if (known) return { kwhPer100km: known, estimated: false };
+  const battery = batteryKwh ?? model?.batteryKwh;
+  return {
+    kwhPer100km: battery ? estimateFromBattery(battery) : DEFAULT_CONSUMPTION_KWH_100KM,
+    estimated: true,
+  };
+}
