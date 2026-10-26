@@ -1,170 +1,388 @@
 # ⚡ ChargeGrid
-### Intelligent EV Charging Ecosystem
+### Ecossistema Inteligente de Mobilidade Elétrica
 
-**Connecting electric mobility, artificial intelligence, energy management, and IoT in one integrated platform.**
+**Conectando veículos elétricos, inteligência artificial, infraestrutura de recarga e gestão energética em uma única plataforma.**
 
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-Type%20Safety-3178C6?logo=typescript&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-FastAPI-3776AB?logo=python&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)
 ![ESP32](https://img.shields.io/badge/ESP32-IoT-E7352C)
-![MQTT](https://img.shields.io/badge/MQTT-Communication-660066)
+![MQTT](https://img.shields.io/badge/MQTT-660066)
 
 ---
 
-## Overview
+## Sobre o projeto
 
-**ChargeGrid** is an integrated electric vehicle charging management platform designed to connect drivers, charging infrastructure, and station operators through a unified digital ecosystem.
+O **ChargeGrid** é um ecossistema de software e hardware desenvolvido para tornar o carregamento de veículos elétricos mais inteligente, acessível e eficiente.
 
-Developed as an academic engineering project in the context of the **FIAP × GoodWe Challenge**, ChargeGrid explores how software engineering, AI-assisted mobility, real-time communication, and IoT can make EV charging more accessible, efficient, and intelligent.
+Criado no contexto do **Challenge FIAP × GoodWe**, o projeto propõe uma solução integrada para três participantes fundamentais da mobilidade elétrica:
 
-Instead of treating charging stations as isolated devices, ChargeGrid brings together the entire charging experience: from trip planning and driver authentication to session monitoring, energy analysis, and operational management.
+- **Motoristas**, que precisam localizar pontos de recarga, acompanhar seus veículos e planejar viagens.
+- **Operadores**, que precisam monitorar eletropostos, acompanhar sessões e compreender o consumo energético.
+- **Infraestrutura física**, que precisa se comunicar com aplicações digitais de maneira confiável.
 
-### The Problem
+A plataforma combina desenvolvimento web, APIs, banco de dados, inteligência artificial, comunicação MQTT e um protótipo físico baseado em ESP32.
 
-The adoption of electric vehicles introduces challenges that go beyond installing charging stations:
-
-- **Range anxiety:** drivers need to understand whether their remaining battery is sufficient to complete a trip.
-- **Fragmented infrastructure:** charging locations, vehicle information, and charging sessions are often managed independently.
-- **Energy demand:** multiple charging sessions can create operational challenges for charging infrastructure.
-- **Limited visibility:** station operators need actionable information about sessions, consumption, customers, and revenue.
-- **User experience:** physical charging hardware and digital applications must communicate reliably.
-
-**ChargeGrid addresses these challenges through a modular, connected system.**
+> Nosso objetivo não é apenas digitalizar um eletroposto, mas integrar toda a experiência de mobilidade elétrica em um único sistema.
 
 ---
 
-## Platform Components
+## O problema que buscamos resolver
 
-ChargeGrid is composed of four complementary systems.
+A expansão dos veículos elétricos apresenta desafios que vão além da instalação de novos carregadores.
 
-| Component | Purpose | Technologies |
-|---|---|---|
-| **Driver Application** | Vehicle management, charging information, digital wallet, charging history, and AI-assisted trip planning | React, TypeScript, TanStack Start |
-| **Charging Kiosk** | Interactive charging experience, station connection, charging session flow, and payment interface | React, TypeScript, Vite |
-| **Operator Dashboard** | Station monitoring, session management, customer information, financial insights, and energy demand analysis | React, TypeScript, Vite |
-| **Backend & IoT Integration** | Business logic, charging operations, authentication integration, and device communication | Python, FastAPI, PostgreSQL, MQTT, ESP32 |
+**Ansiedade de autonomia:** motoristas precisam saber se a carga disponível é suficiente para concluir uma viagem e onde poderão recarregar.
 
-These components are designed to work together while maintaining clear responsibilities and modular boundaries.
+**Informações fragmentadas:** dados de veículos, carregadores, pagamentos e histórico de consumo frequentemente estão distribuídos entre sistemas diferentes.
+
+**Demanda energética:** operadores precisam entender como múltiplas sessões de carregamento impactam a utilização da infraestrutura.
+
+**Integração física e digital:** os equipamentos precisam comunicar eventos e estados para interfaces de usuário e serviços de backend.
+
+O ChargeGrid foi desenvolvido para explorar uma abordagem integrada a esses problemas.
 
 ---
 
-## Key Features
+## Funcionalidades
 
-### 1. AI-Assisted Trip Planning
+### 1. Inteligência Artificial de Rotas
 
-ChargeGrid includes a trip-planning module designed to support more informed electric vehicle journeys.
+O ChargeGrid possui um módulo de planejamento de viagens voltado a veículos elétricos.
 
-The system considers information such as:
+A solução considera informações como origem, destino, modelo do veículo, capacidade da bateria, percentual de carga e estimativas de consumo.
 
-- Trip origin and destination
-- Selected electric vehicle
-- Battery capacity and initial charge level
-- Estimated driving range and energy consumption
-- Charging stops along the journey
+Com esses dados, o sistema pode estimar a autonomia, analisar a necessidade de recargas e apresentar informações de planejamento de viagem.
 
-The planning workflow combines route calculations and vehicle data with an AI-assisted interface to make travel recommendations easier to understand.
+O projeto também explora integração com dados públicos de infraestrutura de carregamento.
 
-The project also explores public charging infrastructure discovery through **Open Charge Map**.
+**Diferencial técnico:** os cálculos energéticos são tratados como regras do sistema. A IA atua como uma camada de interpretação e assistência, reduzindo a dependência de respostas geradas livremente por modelos de linguagem.
 
-**Engineering principle:** critical energy and range estimates should be calculated using explicit rules and vehicle parameters rather than trusting unrestricted AI-generated numbers.
+As estimativas consideram hipóteses de consumo e não garantem a autonomia real do veículo. Fatores como relevo, temperatura, trânsito e estilo de condução podem alterar os resultados.
 
-> Range predictions are estimates, not guarantees. Driving conditions, temperature, terrain, battery health, and vehicle efficiency can affect real-world results. Public charger data does not guarantee live availability.
+### 2. Aplicativo do Motorista
 
-### 2. EV Charging Experience
+Interface desenvolvida para centralizar a experiência de quem utiliza um veículo elétrico.
 
-The charging kiosk provides an interactive interface covering the main steps of a charging session.
+Principais módulos:
 
-Its architecture includes:
+- Autenticação e gerenciamento de conta
+- Cadastro e gerenciamento de veículos
+- Visualização de eletropostos
+- Histórico de carregamento
+- Carteira digital e registros financeiros
+- Planejamento inteligente de viagens
+- Assistente de suporte
 
-- Driver identification and station connection
-- Vehicle and charging information
-- Charging preferences
-- Charging progress visualization
-- Charging history and session information
-- Payment-related interface flows
+O aplicativo utiliza **React, TypeScript e TanStack Start**, com integração ao Supabase.
 
-The objective is to make the interaction with charging infrastructure intuitive while connecting the physical charging experience to the broader platform.
+### 3. Painel de Carregamento
 
-### 3. IoT and RFID Integration
+Interface voltada à experiência de recarga em um eletroposto.
 
-ChargeGrid explores hardware-to-software integration through an **ESP32-based prototype**.
+O painel contempla o fluxo de identificação do motorista, seleção de preferências, acompanhamento da sessão e informações relacionadas ao carregamento.
 
-The hardware architecture incorporates:
+Foi construído em **React, TypeScript e Vite**, priorizando uma interface visual simples e de fácil utilização.
 
-- ESP32 microcontroller
-- MFRC522 RFID reader
-- LCD display
-- Buzzer feedback
-- Wi-Fi connectivity
-- MQTT messaging
+### 4. Integração IoT com ESP32 e RFID
 
-RFID events can be transmitted from the ESP32 to the backend, connecting physical card interactions with the application's charging and identification workflows.
+Um dos principais diferenciais do projeto é a integração entre o ambiente digital e um protótipo físico de carregamento.
 
-This demonstrates how embedded systems, asynchronous communication, backend services, and user interfaces can operate together.
+O hardware utiliza:
 
-**Security consideration:** RFID card identifiers are not sufficient as a standalone high-assurance authentication mechanism. Additional verification is required for security-sensitive operations.
+- Microcontrolador ESP32
+- Leitor RFID MFRC522
+- Display LCD
+- Buzzer para feedback sonoro
+- Comunicação Wi-Fi
+- Protocolo MQTT
 
-### 4. Energy Demand Management
+O ESP32 transmite eventos de hardware por MQTT, permitindo que o backend interprete interações físicas e as conecte aos fluxos da aplicação.
 
-ChargeGrid also approaches EV charging from the operator's perspective.
+Essa arquitetura demonstra a integração entre **sistemas embarcados, eventos assíncronos, serviços backend e interfaces web**.
 
-The demand management module is designed to provide visibility into energy-related operational data, including charging power, session activity, and consumption.
+O protótipo utiliza RFID para identificação. Operações sensíveis exigem controles de autorização adicionais para uma implementação em produção.
 
-This information can support:
+### 5. Painel do Operador
 
-- Monitoring charging infrastructure utilization
-- Understanding energy demand
-- Reviewing charging session performance
-- Supporting infrastructure planning
-- Identifying opportunities for improved energy efficiency
+Aplicação administrativa voltada ao acompanhamento operacional dos eletropostos.
 
-The project also includes an analytics-oriented foundation for exploring AI-assisted operational insights.
-
-### 5. Operator Dashboard
-
-The operator interface centralizes information that would otherwise be distributed across multiple systems.
-
-Its modules include:
-
-| Module | Responsibility |
+| Módulo | Responsabilidade |
 |---|---|
-| Dashboard | Operational overview and key indicators |
-| Stations | Charging station information and management |
-| Sessions | Charging activity and session records |
-| Customers | Customer information |
-| Finance | Financial and charging-related insights |
-| Demand | Energy demand analysis |
-| Intelligence | Analytical and AI-oriented capabilities |
+| Dashboard | Visão geral dos indicadores operacionais |
+| Eletropostos | Gerenciamento e acompanhamento das estações |
+| Sessões | Consulta das atividades de carregamento |
+| Clientes | Informações sobre os usuários |
+| Financeiro | Acompanhamento dos registros financeiros |
+| Demanda | Análise da utilização energética |
+| Inteligência | Indicadores e análises assistidas por IA |
 
-### 6. Digital Wallet and Charging History
+O painel utiliza React e TypeScript e se comunica com os serviços do backend.
 
-The driver-facing platform includes functionality for managing a digital wallet and reviewing charging activity.
+### 6. Gestão da Demanda Energética
 
-These features connect the charging experience to transaction records and provide a foundation for tracking usage and costs.
+Além da experiência do motorista, o ChargeGrid aborda a operação energética dos pontos de recarga.
 
-Payment-related workflows are part of the prototype. Production financial processing requires a properly integrated payment provider, authorization controls, and additional security validation.
+O módulo de demanda explora o acompanhamento de informações como potência, consumo, utilização e sessões de carregamento.
+
+Esses dados podem apoiar análises de capacidade, identificação de padrões de uso e planejamento da infraestrutura.
+
+A proposta é contribuir para uma operação de carregamento mais eficiente e orientada por dados.
 
 ---
 
-## System Architecture
+## Arquitetura do Sistema
 
-ChargeGrid follows a modular architecture that separates user interfaces, business logic, data persistence, and physical device communication.
+O ChargeGrid adota uma arquitetura modular, separando as interfaces, as regras de negócio, a persistência de dados e a comunicação com o hardware.
 
 ```mermaid
-flowchart TB
-    subgraph Frontend["Application Layer"]
-        A["Driver Application"]
-        B["Charging Kiosk"]
-        C["Operator Dashboard"]
-    end
+flowchart TD
+    A["Aplicativo do Motorista"]
+    B["Painel de Carregamento"]
+    C["Painel do Operador"]
+    D["Backend FastAPI"]
+    E["Modulo de IA e Rotas"]
+    F["Supabase e PostgreSQL"]
+    G["Broker MQTT"]
+    H["ESP32"]
+    I["Leitor RFID"]
+    J["Display LCD e Buzzer"]
 
-    subgraph Services["Service Layer"]
-        D["FastAPI Backend"]
-        E["Trip Planning & AI Services"]
-        F["MQTT Messaging"]
-    end
+    A --> D
+    B --> D
+    C --> D
+    A --> E
+    D --> F
+    D <--> G
+    G <--> H
+    I --> H
+    H --> J
+```
 
-    subgraph Data["Data Layer"]
-        G[("Supabase / PostgreSQL")]
-        H
+### Decisões de arquitetura
+
+**Separação de responsabilidades:** cada aplicação apresenta funcionalidades específicas, enquanto o backend centraliza regras de negócio e integrações.
+
+**Comunicação orientada a eventos:** o MQTT permite transmitir interações do hardware sem depender exclusivamente de requisições HTTP.
+
+**Persistência relacional:** PostgreSQL e Supabase são utilizados para dados estruturados do sistema.
+
+**IA integrada a regras determinísticas:** cálculos críticos, especialmente os relacionados à energia e autonomia, devem permanecer verificáveis e independentes das respostas do modelo.
+
+**Modularidade:** os diferentes serviços podem evoluir sem exigir a reconstrução completa da plataforma.
+
+---
+
+## Tecnologias Utilizadas
+
+| Categoria | Tecnologias |
+|---|---|
+| Frontend | React, TypeScript, Vite |
+| Aplicação full-stack | TanStack Start, TanStack Router |
+| Interface | Tailwind CSS, Lucide Icons |
+| Backend | Python, FastAPI |
+| Banco de dados | PostgreSQL, Supabase |
+| Autenticação | Supabase Auth |
+| Comunicação | APIs REST, MQTT |
+| Hardware | ESP32, RFID MFRC522, LCD |
+| Mapas | Leaflet, React Leaflet |
+| Dados de carregadores | Open Charge Map |
+| Versionamento | Git, GitHub |
+
+---
+
+## Estrutura do Repositório
+
+```text
+Chargegrid/
+|
+|-- app_chargergrid/
+|   |-- src/
+|   |   |-- components/
+|   |   |-- lib/
+|   |   |-- routes/
+|   |   |-- integrations/
+|   |-- package.json
+|
+|-- painel-carregamento/
+|   |-- src/
+|   |-- package.json
+|
+|-- painel-operador/
+|   |-- src/
+|   |-- package.json
+|
+|-- backend_python/
+|   |-- ai/
+|   |-- main.py
+|   |-- admin.py
+|   |-- mqtt_bridge.py
+|   |-- demand_control.py
+|   |-- wallet.py
+|
+|-- docs/
+|   |-- architecture.md
+|   |-- data-flow.md
+|   |-- database.md
+|   |-- assistente.md
+|
+|-- README.md
+```
+
+A organização em múltiplas aplicações permite desenvolver e testar os principais módulos de forma relativamente independente.
+
+---
+
+## Como Executar Localmente
+
+### Pré-requisitos
+
+- Node.js e npm
+- Python
+- Git
+- Projeto Supabase configurado
+- Broker MQTT para as funcionalidades relacionadas ao hardware
+- Variáveis de ambiente necessárias às integrações utilizadas
+
+### 1. Clonar o repositório
+
+```bash
+git clone https://github.com/Camper-Lingo/Chargegrid.git
+cd Chargegrid
+```
+
+### 2. Aplicativo do motorista
+
+```bash
+cd app_chargergrid
+npm ci
+npm run dev
+```
+
+Configure as variáveis de ambiente exigidas pela aplicação utilizando o arquivo `.env.example` como referência.
+
+### 3. Painel de carregamento
+
+Em outro terminal:
+
+```bash
+cd painel-carregamento
+npm ci
+npm run dev
+```
+
+### 4. Painel do operador
+
+Em outro terminal:
+
+```bash
+cd painel-operador
+npm ci
+npm run dev
+```
+
+### 5. Backend Python
+
+Entre na pasta `backend_python` e crie um ambiente virtual:
+
+```bash
+python -m venv .venv
+```
+
+No Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Instale as dependências Python de acordo com a configuração do backend e execute:
+
+```bash
+python -m uvicorn main:app --reload --port 8000
+```
+
+A documentação interativa da API estará disponível em:
+
+`http://localhost:8000/docs`
+
+**Importante:** funcionalidades integradas dependem da configuração dos serviços externos, do banco de dados e, quando aplicável, do hardware. A compilação das interfaces não garante que todas as integrações estejam operacionais em um novo ambiente.
+
+---
+
+## Principais Desafios Técnicos
+
+### Integração entre software e hardware
+
+Construir a comunicação entre o ESP32 e os serviços Python exigiu organizar eventos físicos, mensagens MQTT, identificação de dispositivos e atualização do estado das aplicações.
+
+### Planejamento de viagens com restrições energéticas
+
+O planejamento de rotas para veículos elétricos envolve restrições diferentes das encontradas em sistemas de navegação tradicionais.
+
+É necessário considerar energia disponível, consumo estimado, distância, margem de segurança e oportunidades de recarga.
+
+### Consistência entre aplicações
+
+O sistema possui múltiplas interfaces que dependem dos mesmos conceitos de usuário, veículo, sessão e estação de carregamento.
+
+Isso exige contratos de API, persistência consistente e uma separação clara das responsabilidades.
+
+### Segurança e autenticação
+
+O projeto incorpora conceitos de autenticação, identificação por RFID e controle de acesso a dados e funcionalidades.
+
+A evolução para um ambiente de produção exige validações adicionais de segurança, autorização, gestão de credenciais e testes.
+
+---
+
+## Próximas Evoluções
+
+- [ ] Expandir a cobertura e a confiabilidade dos dados de eletropostos públicos
+- [ ] Melhorar os modelos de consumo e autonomia dos veículos
+- [ ] Considerar desvios, conectores compatíveis e disponibilidade de recarga nas rotas
+- [ ] Incorporar recomendações mais completas de serviços próximos às paradas
+- [ ] Evoluir a análise e previsão de demanda energética
+- [ ] Fortalecer os mecanismos de autenticação e autorização
+- [ ] Ampliar testes automatizados e de integração
+- [ ] Melhorar observabilidade e tratamento de falhas
+- [ ] Concluir integrações financeiras para ambientes reais
+- [ ] Expandir os testes físicos e a interoperabilidade do hardware
+
+---
+
+## Documentação Técnica
+
+Para informações mais detalhadas sobre o funcionamento e a organização do sistema:
+
+- [Arquitetura](docs/architecture.md)
+- [Fluxo de Dados](docs/data-flow.md)
+- [Banco de Dados](docs/database.md)
+- [Assistente de IA](docs/assistente.md)
+
+---
+
+## Contexto Acadêmico
+
+O ChargeGrid foi desenvolvido por estudantes de **Ciência da Computação da FIAP**, no contexto de um desafio de inovação tecnológica relacionado à mobilidade elétrica e à GoodWe.
+
+O projeto reúne conhecimentos de desenvolvimento de software, banco de dados, algoritmos, inteligência artificial, sistemas distribuídos e Internet das Coisas.
+
+---
+
+## Escopo do Protótipo
+
+O ChargeGrid é um projeto acadêmico e uma demonstração de engenharia, não uma plataforma comercial certificada.
+
+Algumas funcionalidades dependem de infraestrutura externa, dados de terceiros, simulações ou equipamentos de prototipagem.
+
+A utilização comercial exigiria validação de segurança, atualização de dependências, testes operacionais e integração com equipamentos de carregamento certificados.
+
+---
+
+## Nossa Visão
+
+> **A mobilidade elétrica não depende apenas de baterias e carregadores. Depende de sistemas inteligentes capazes de conectar pessoas, infraestrutura e energia.**
+
+O ChargeGrid demonstra como diferentes áreas da computação podem trabalhar juntas para construir soluções voltadas à mobilidade do futuro.
+
+**ChargeGrid — Inteligência que conecta. Energia que movimenta.** ⚡
