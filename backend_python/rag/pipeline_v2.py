@@ -1,4 +1,4 @@
-
+from langchain_ollama import ChatOllama
 from rag.pipeline import criar_modelo
 from rag.reranker import buscar_v2
 from rag.model_router import (
@@ -8,12 +8,15 @@ from rag.model_router import (
 from rag.prompt_rag import SYSTEM_PROMPT_V2
 
 
+
 def responder_v2(
     pergunta: str,
     arquivo: str | None = None,
     k_inicial: int = 20,
     k_final: int = 5,
+    modelo_nome: str = "gemma4:cloud",
 ) -> dict:
+
     """
     Pipeline RAG V2:
     seleção de fonte -> busca -> reranking ->
@@ -75,7 +78,17 @@ def responder_v2(
 
     familia = identificar_familia(pergunta)
 
-    resposta_modelo = criar_modelo().invoke([
+    
+    modelo = ChatOllama(
+        model=modelo_nome,
+        temperature=0,
+        top_p=0.9,
+        num_predict=512,
+        base_url="http://127.0.0.1:11434",
+    )
+
+    resposta_modelo = modelo.invoke([
+
         ("system", SYSTEM_PROMPT_V2),
         (
             "human",
