@@ -27,3 +27,5 @@ audit-*.json
 /app_chargergrid/public/
 /app_chargergrid/supabase/
 /app_chargergrid/README.md
+
+.venv-rag/
