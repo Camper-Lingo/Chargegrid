@@ -1,5 +1,6 @@
 # Evidências — RAG V2.1
 
+
 ## Questão 1
 
 **Pergunta:** Quais cuidados de segurança são necessários para utilizar carregadores GoodWe HCA?

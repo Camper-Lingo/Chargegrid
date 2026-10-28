@@ -79,13 +79,16 @@ def responder_v2(
     familia = identificar_familia(pergunta)
 
     
+    
     modelo = ChatOllama(
         model=modelo_nome,
         temperature=0,
         top_p=0.9,
-        num_predict=512,
+        num_predict=1024,
+        reasoning=False,
         base_url="http://127.0.0.1:11434",
     )
+
 
     resposta_modelo = modelo.invoke([
 

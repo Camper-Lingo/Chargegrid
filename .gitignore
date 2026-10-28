@@ -29,3 +29,22 @@ audit-*.json
 /app_chargergrid/README.md
 
 .venv-rag/
+
+# Ambientes e segredos
+.venv/
+.venv-rag/
+venv/
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+
+# Banco vetorial gerado localmente
+data/chroma_db/
+
+# Arquivos temporários
+*.log
+.pytest_cache/

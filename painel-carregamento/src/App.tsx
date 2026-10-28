@@ -10,6 +10,7 @@ import { ChargingScreen } from './components/Screens/ChargingScreen';
 import { HistoryScreen } from './components/Screens/HistoryScreen';
 import { SplashScreen } from './components/Screens/SplashScreen';
 import { PaymentScreen } from './components/Screens/PaymentScreen';
+import ChargeGridChat from "./components/ChargeGridChat";
 import { WelcomeScreen } from './components/Screens/WelcomeScreen';
 import { ToastContainer } from './components/Common/Toast';
 import { useStorage } from './hooks/useStorage';
@@ -1581,6 +1582,21 @@ useEffect(() => {
 
       <ToastContainer toasts={toasts} onClose={removeToast} />
       </main>
+      <div
+  style={{
+    position: "fixed",
+    top: 80,
+    right: 20,
+    zIndex: 999999,
+    background: "red",
+    color: "white",
+    padding: 20,
+  }}
+>
+  TESTE CHATBOT
+</div>
+
+<ChargeGridChat />
     </div>
   );
 }

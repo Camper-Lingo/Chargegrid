@@ -1,4 +1,9 @@
-﻿id,pergunta,resposta,fontes,faithfulness,answer_relevancy,observacoes
+﻿id,faithfulness,answer_relevancy,observacoes
+1,1.00,0.75,"Orientações sustentadas; cobertura de segurança menor que na V1."
+2,1.00,1.00,"Potências confirmadas pela ficha técnica HCA G2 na página 2."
+3,1.00,1.00,"Funções inteligentes confirmadas pelo manual HCA G2 na página 14."
+4,1.00,0.50,"Informações fundamentadas e verificações pós-instalação recuperadas; procedimento completo ausente."
+5,1.00,1.00,"Recusa apropriada por ausência de dados de tarifas na base; fontes citadas não comprovam tarifas."
 1,Quais cuidados de segurança são necessários para utilizar carregadores GoodWe HCA?,"Com base nos documentos técnicos fornecidos, os cuidados de segurança e recomendações para a utilização dos carregadores GoodWe HCA são:
 
 *   **Público Alvo e Qualificação:** O manual é destinado exclusivamente a profissionais técnicos treinados e conhecedores, que devem estar familiarizados com o produto, os sistemas elétricos e as normas locais [Fonte 1].

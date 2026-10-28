@@ -5,7 +5,7 @@ from wallet import router as wallet_router
 import json
 from uuid import UUID, uuid4
 import math
-
+from rag.api import router as rag_router
 
 from wallet import (
     InsufficientBalance,
@@ -36,6 +36,7 @@ from tariff import (
 from demand_control import calculate_demand
 
 app = FastAPI(title="GoodWe Charging API")
+app.include_router(rag_router)
 app.include_router(wallet_router)
 app.include_router(admin_router)
 demand_config = {
