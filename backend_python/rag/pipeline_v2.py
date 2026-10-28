@@ -11,7 +11,7 @@ from rag.prompt_rag import SYSTEM_PROMPT_V2
 def responder_v2(
     pergunta: str,
     arquivo: str | None = None,
-    k_inicial: int = 15,
+    k_inicial: int = 20,
     k_final: int = 5,
 ) -> dict:
     """
