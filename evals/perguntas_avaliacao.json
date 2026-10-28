@@ -1,0 +1,28 @@
+
+[
+  {
+    "id": 1,
+    "pergunta": "Quais cuidados de segurança são necessários para utilizar carregadores GoodWe HCA?",
+    "arquivo": "GW_HCA Series_User Manual-EN.pdf"
+  },
+  {
+    "id": 2,
+    "pergunta": "Quais são as potências nominais dos modelos HCA G2?",
+    "arquivo": "GW_HCA-G2_Datasheet-EN.pdf"
+  },
+  {
+    "id": 3,
+    "pergunta": "Quais funções de carregamento inteligente são descritas para o HCA G2?",
+    "arquivo": "GW_HCA-G2_User Manual-EN.pdf"
+  },
+  {
+    "id": 4,
+    "pergunta": "Qual é o procedimento de instalação do carregador HCA?",
+    "arquivo": "GW_HCA Series_Quick Installation Guide-POLY.pdf"
+  },
+  {
+    "id": 5,
+    "pergunta": "Qual é o preço atual da energia elétrica em Jundiaí?",
+    "arquivo": null
+  }
+]
